@@ -1,0 +1,203 @@
+<!--
+locked: true
+-->
+<page title="Inventory - Admin">
+<content>
+  <script type="module" src="/kempo-ui/components/Table.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcSearch.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcFilters.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcFieldSortHide.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcFirstPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPrevPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcNextPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcLastPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPageSelect.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPageSize.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcDeleteRecord.js"></script>
+  <script type="module" src="/kempo-ui/components/Toggle.js"></script>
+  <script type="module" src="/kempo-ui/components/Combobox.js"></script>
+  <script type="module" src="/kempo-ui/components/Icon.js"></script>
+  <script type="module" src="/kempo/components/Permission.js"></script>
+  <script type="module" src="/inventory/components/RowAction.js"></script>
+
+  <h1 class="mb">Inventory</h1>
+
+  <!--
+    Everything that acts on the table lives in the table: search, filters and the buttons above it,
+    paging below it, and the row actions beside each record.
+  -->
+  <k-table
+    id="itemsTable"
+    enable-pages
+    page-size="25"
+    page-size-options="[10,25,50,100]"
+    placeholder="No items yet."
+    filtered-placeholder="No items match your search."
+  >
+    <div slot="top" class="d-f full" style="align-items: center; gap: var(--spacer_h); flex-wrap: wrap;">
+      <kc-tc-search style="width: 16rem"></kc-tc-search>
+      <kc-tc-filters></kc-tc-filters>
+      <kc-tc-field-sort-hide></kc-tc-field-sort-hide>
+      <div class="flex"></div>
+      <k-permission has="kempo-inventory:fields:manage">
+        <button id="importBtn" class="btn m0"><k-icon name="arrow" direction="up"></k-icon> Import</button>
+      </k-permission>
+      <k-permission has="kempo-inventory:fields:manage">
+        <button id="exportBtn" class="btn m0"><k-icon name="download"></k-icon> Export</button>
+      </k-permission>
+      <a href="/admin/extension/kempo-inventory/categories" class="btn"><k-icon name="folder"></k-icon> Categories</a>
+      <k-permission has="kempo-inventory:fields:manage">
+        <a href="/admin/extension/kempo-inventory/fields" class="btn"><k-icon name="settings"></k-icon> Fields</a>
+      </k-permission>
+      <k-permission has="kempo-inventory:items:create">
+        <button id="newItemBtn" class="primary m0"><k-icon name="add"></k-icon> New Item</button>
+      </k-permission>
+    </div>
+    <div class="d-f full" style="align-items: center;">
+      <div>
+        <kc-tc-first-page></kc-tc-first-page>
+        <kc-tc-prev-page></kc-tc-prev-page>
+        <kc-tc-next-page></kc-tc-next-page>
+        <kc-tc-last-page></kc-tc-last-page>
+      </div>
+      <div class="flex"></div>
+      <div><kc-tc-page-select></kc-tc-page-select></div>
+      <div class="flex"></div>
+      <div><kc-tc-page-size></kc-tc-page-size></div>
+    </div>
+  </k-table>
+
+  <script type="module">
+    import { getItems, deleteItem, getFields } from '/inventory/sdk.js';
+    import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
+    import Toast from '/kempo-ui/components/Toast.js';
+    import Dialog from '/kempo-ui/components/Dialog.js';
+    import { displayValue, applicableFields } from '/inventory/components/ItemFields.js';
+    import { openAdjustDialog } from '/inventory/components/ItemDialog.js';
+    import { openImportDialog, openExportDialog } from '/inventory/components/ImportExport.js';
+    import { showFlash } from '/inventory/components/flash.js';
+
+    await window.customElements.whenDefined('k-table');
+    await window.customElements.whenDefined('k-toggle');
+    const $table = document.getElementById('itemsTable');
+
+    const [, permData] = await getAllCurrentUserPermissions();
+    const myPerms = new Set(permData?.permissions ?? []);
+    const can = name => myPerms.has(`kempo-inventory:${name}`);
+
+    const addControl = (tag, slot, attributes = {}) => {
+      const $control = document.createElement(tag);
+      $control.setAttribute('slot', slot);
+      for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
+      $table.appendChild($control);
+    };
+    if(can('items:update')) addControl('inventory-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    if(can('stock:adjust')) addControl('inventory-row-action', 'before', { action: 'adjust', icon: 'repeat', title: 'Adjust stock' });
+    if(can('items:delete')){
+      $table.setAttribute('request-delete', '');
+      addControl('kc-tc-delete-record', 'after');
+    }
+
+    /*
+      The custom fields are data, not code: the columns and the form below are all built from
+      whatever the field list says right now.
+    */
+    let fields = [];
+    /* The Managed by column only appears once an extension owns an item. */
+    let owners = false;
+
+    /*
+      Display-only values are precomputed as plain strings so the table never formats
+      user-supplied text itself.
+    */
+    const decorate = (item, ctx) => {
+      const record = { ...item, qtyText: String(item.quantity), tagsText: item.tags.join(', '), ownerText: item.owner };
+      /* Only the fields that apply to this item's category; a column another category's items fill stays blank here. */
+      for(const field of applicableFields(fields, item.category).filter(f => f.listed)) record[`f_${field.key}`] = displayValue(field, item.fields[field.key], ctx);
+      return record;
+    };
+
+    const columns = () => [
+      { name: 'sku', label: 'SKU', size: 130, editable: false },
+      { name: 'name', label: 'Name', size: 240, editable: false },
+      { name: 'category', label: 'Category', size: 140, editable: false },
+      { name: 'qtyText', label: 'Quantity', size: 100, editable: false },
+      { name: 'tagsText', label: 'Tags', size: 160, editable: false },
+      ...(owners ? [{ name: 'ownerText', label: 'Managed by', size: 170, editable: false }] : []),
+      /* One column per key: a key two categories both use is one column. */
+      ...fields.filter((f, i) => f.listed && fields.findIndex(o => o.listed && o.key === f.key) === i).map(f => ({ name: `f_${f.key}`, label: f.label, size: 130, editable: false })),
+    ];
+
+    /*
+      The table searches, filters and pages the records itself, so every item is loaded (the API
+      hands them over 200 at a time). A personal inventory is a few hundred items at most.
+    */
+    const loadEveryItem = async () => {
+      const items = [];
+      let context = { linked: {}, media: {} };
+      for(let offset = 0; ; offset += 200){
+        const [error, page] = await getItems({ limit: 200, offset });
+        if(error) return [error, null];
+        items.push(...page.items);
+        context = { linked: { ...context.linked, ...page.linked }, media: { ...context.media, ...page.media } };
+        if(!page.items.length || items.length >= page.total) return [null, { items, context }];
+      }
+    };
+
+    const load = async () => {
+      const [error, data] = await loadEveryItem();
+      if(error){
+        Toast.error(error.msg || 'Failed to load inventory');
+        return;
+      }
+      owners = data.items.some(i => i.owner);
+      $table.setData({ records: data.items.map(i => decorate(i, data.context)), fields: columns() });
+    };
+
+    const loadFields = async () => {
+      const [error, data] = await getFields();
+      if(error){
+        Toast.error(error.msg || 'Failed to load fields');
+        return;
+      }
+      fields = data.fields;
+    };
+
+    $table.addEventListener('requestDelete', ({ detail: { records, approve, reject } }) => {
+      const [record] = records;
+      if(record.owner){
+        reject();
+        Toast.error(`"${record.name}" is managed by the ${record.owner} extension and cannot be deleted here`);
+        return;
+      }
+      Dialog.confirm(`Delete "${record.name}" and its stock history? This action cannot be undone.`, async confirmed => {
+        if(!confirmed){ reject(); return; }
+        const [error] = await deleteItem(record.id);
+        if(error){
+          reject();
+          Toast.error(error.msg || 'Failed to delete item');
+          return;
+        }
+        approve();
+        Toast.success('Item deleted');
+        load();
+      });
+    });
+
+    $table.addEventListener('itemAction', ({ detail: { action, record } }) => {
+      /* Editing is a page of its own, like adding: a dialog is too easy to dismiss and loses what was entered. */
+      if(action === 'edit') location.href = `/admin/extension/kempo-inventory/edit?id=${encodeURIComponent(record.id)}`;
+      if(action === 'adjust') openAdjustDialog({ item: record, onSaved: load });
+    });
+
+    document.getElementById('importBtn')?.addEventListener('click', () => openImportDialog({ onDone: load }));
+    document.getElementById('exportBtn')?.addEventListener('click', () => openExportDialog());
+    /* Adding an item is a page of its own: a dialog is too easy to dismiss and loses everything entered. */
+    document.getElementById('newItemBtn')?.addEventListener('click', () => { location.href = '/admin/extension/kempo-inventory/new'; });
+
+    await loadFields();
+    await load();
+    showFlash();
+  </script>
+</content>
+</page>

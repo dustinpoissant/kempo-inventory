@@ -1,0 +1,103 @@
+{
+  "public-scope": "inventory",
+  "schema": "./server/db/schema.js",
+  "permissions": [
+    {
+      "name": "kempo-inventory:items:read",
+      "description": "View inventory items, fields and stock movements"
+    },
+    {
+      "name": "kempo-inventory:items:create",
+      "description": "Add new inventory items"
+    },
+    {
+      "name": "kempo-inventory:items:update",
+      "description": "Edit inventory items"
+    },
+    {
+      "name": "kempo-inventory:items:delete",
+      "description": "Delete inventory items"
+    },
+    {
+      "name": "kempo-inventory:stock:adjust",
+      "description": "Add or remove stock on inventory items"
+    },
+    {
+      "name": "kempo-inventory:fields:manage",
+      "description": "Create, edit and delete custom item fields"
+    }
+  ],
+  "groups": [
+    {
+      "name": "kempo-inventory:viewer",
+      "description": "Can view inventory",
+      "permissions": [
+        "system:admin:access",
+        "kempo-inventory:items:read"
+      ]
+    },
+    {
+      "name": "kempo-inventory:manager",
+      "description": "Can view and manage items and stock levels",
+      "permissions": [
+        "system:admin:access",
+        "kempo-inventory:items:read",
+        "kempo-inventory:items:create",
+        "kempo-inventory:items:update",
+        "kempo-inventory:items:delete",
+        "kempo-inventory:stock:adjust"
+      ]
+    },
+    {
+      "name": "kempo-inventory:admin",
+      "description": "Can manage items and stock levels, and set up the custom fields items have",
+      "permissions": [
+        "system:admin:access",
+        "kempo-inventory:items:read",
+        "kempo-inventory:items:create",
+        "kempo-inventory:items:update",
+        "kempo-inventory:items:delete",
+        "kempo-inventory:stock:adjust",
+        "kempo-inventory:fields:manage"
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "name": "media_provider",
+      "value": "auto",
+      "type": "string",
+      "description": "Where new photos and files are uploaded: auto, kempo-media or kempo-files. Auto uses kempo-files when kempo-thumbs is installed to thumbnail it, otherwise kempo-media."
+    },
+    {
+      "name": "import_max_mb",
+      "value": 250,
+      "type": "number",
+      "description": "The largest import file (a .json or .zip made by Export) the admin Import accepts, in MB."
+    },
+    {
+      "name": "public_read",
+      "value": false,
+      "type": "boolean",
+      "description": "Let anyone, signed in or not, browse the inventory (items, categories, photos). They never see stock counts. Off by default: reading otherwise needs the items:read permission."
+    },
+    {
+      "name": "public_photos",
+      "value": true,
+      "type": "boolean",
+      "description": "Photos uploaded to kempo-files are viewable by anyone with the link, so every person who can read the inventory sees them (kempo-files otherwise needs each of them to have its files:download permission). Turn off to keep photos behind that permission."
+    },
+    {
+      "name": "category_image_ratio",
+      "value": "4:3",
+      "type": "string",
+      "description": "The aspect ratio category images are shown at, as width:height (4:3, 1:1, 16:9). Images are cropped to fit, never stretched."
+    },
+    {
+      "name": "item_image_ratio",
+      "value": "4:3",
+      "type": "string",
+      "description": "The aspect ratio item photos are shown at, as width:height (4:3, 1:1, 16:9). Images are cropped to fit, never stretched."
+    }
+  ]
+}

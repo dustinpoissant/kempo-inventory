@@ -1,0 +1,43 @@
+<!--
+locked: true
+-->
+<page title="New Item - Admin">
+<content>
+  <script type="module" src="/kempo-ui/components/Icon.js"></script>
+
+  <div class="d-f mb" style="align-items: center; gap: var(--spacer);">
+    <a href="/admin/extension/kempo-inventory/" class="btn" id="backLink"><k-icon name="arrow" direction="left"></k-icon> Inventory</a>
+    <h1 class="flex mb0">New Item</h1>
+  </div>
+
+  <div id="newItem" style="max-width: 44rem;"></div>
+
+  <script type="module">
+    import { getFields } from '/inventory/sdk.js';
+    import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
+    import Toast from '/kempo-ui/components/Toast.js';
+    import { mountNewItemPage, safeNext } from '/inventory/components/NewItemPage.js';
+    import { showFlash } from '/inventory/components/flash.js';
+
+    const [, permData] = await getAllCurrentUserPermissions();
+    const $container = document.getElementById('newItem');
+    if(!new Set(permData?.permissions ?? []).has('kempo-inventory:items:create')){
+      $container.innerHTML = '<p class="tc-danger">Your account is not allowed to add items.</p>';
+    } else {
+      const [error, data] = await getFields();
+      if(error){
+        Toast.error(error.msg || 'Failed to load the item form');
+      } else {
+        /* ?category= starts the item in a category; ?next= is where to go after saving (a path on this site). */
+        const params = new URLSearchParams(location.search);
+        const defaults = {};
+        for(const key of ['category', 'sku', 'name']) if(params.get(key)) defaults[key] = params.get(key);
+        const next = safeNext(params.get('next'), '/admin/extension/kempo-inventory/');
+        document.getElementById('backLink').href = next;
+        mountNewItemPage({ $container, fields: data.fields, defaults, next });
+      }
+    }
+    showFlash();
+  </script>
+</content>
+</page>

@@ -1,0 +1,300 @@
+<!--
+locked: true
+-->
+<page title="Inventory Fields - Admin">
+<content>
+  <script type="module" src="/kempo-ui/components/Table.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcDeleteRecord.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcSearch.js"></script>
+  <script type="module" src="/kempo-ui/components/Toggle.js"></script>
+  <script type="module" src="/kempo-ui/components/Icon.js"></script>
+  <script type="module" src="/kempo/components/Permission.js"></script>
+  <script type="module" src="/inventory/components/RowAction.js"></script>
+
+  <div class="d-f mb" style="align-items: center; gap: var(--spacer);">
+    <a href="/admin/extension/kempo-inventory/" class="btn"><k-icon name="arrow" direction="left"></k-icon> Inventory</a>
+    <h1 class="flex mb0">Item Fields</h1>
+  </div>
+  <p class="mb tc-muted">
+    Every item has a SKU, name, category, quantity and description. A field you add for <strong>every item</strong> appears on all of them;
+    a field you add for one category (a paint's "Finish", say) only appears on items in that category.
+    Fields added by other extensions are managed by those extensions.
+  </p>
+
+  <k-table id="fieldsTable" placeholder="No custom fields yet." filtered-placeholder="No fields match your search.">
+    <div slot="top" class="d-f full" style="align-items: center; gap: var(--spacer_h); flex-wrap: wrap;">
+      <kc-tc-search style="width: 16rem"></kc-tc-search>
+      <label class="d-f m0" style="align-items: center; gap: var(--spacer_h);">Show fields for
+        <select id="scopeFilter" style="width: auto;" aria-label="Show fields for"></select>
+      </label>
+      <div class="flex"></div>
+      <k-permission has="kempo-inventory:fields:manage">
+        <button id="newFieldBtn" class="primary m0"><k-icon name="add"></k-icon> New Field</button>
+      </k-permission>
+    </div>
+  </k-table>
+
+  <script type="module">
+    import { getFields, createField, updateField, deleteField, getCategories } from '/inventory/sdk.js';
+    import { html } from '/kempo-ui/lit-all.min.js';
+    import Toast from '/kempo-ui/components/Toast.js';
+    import Dialog from '/kempo-ui/components/Dialog.js';
+
+    await window.customElements.whenDefined('k-table');
+    await window.customElements.whenDefined('k-toggle');
+    const $table = document.getElementById('fieldsTable');
+
+    const TYPE_LABELS = {
+      text: 'Text',
+      longtext: 'Long text',
+      number: 'Number',
+      boolean: 'Yes / No',
+      date: 'Date',
+      color: 'Color',
+      rating: 'Rating (stars)',
+      select: 'Choice list',
+      item: 'Link to another item',
+      media: 'Photos / files',
+    };
+
+    const addControl = (tag, slot, attributes = {}) => {
+      const $control = document.createElement(tag);
+      $control.setAttribute('slot', slot);
+      for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
+      $table.appendChild($control);
+    };
+    addControl('inventory-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    $table.setAttribute('request-delete', '');
+    addControl('kc-tc-delete-record', 'after');
+
+    /* Same rule the server applies, so the key preview matches what gets saved. */
+    const keyFromLabel = label => {
+      const words = String(label ?? '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+      const key = words.map((w, i) => i === 0 ? w.charAt(0).toLowerCase() + w.slice(1) : w.charAt(0).toUpperCase() + w.slice(1)).join('');
+      return /^[a-z]/.test(key) ? key.slice(0, 40) : '';
+    };
+
+    const decorate = field => ({
+      ...field,
+      typeText: TYPE_LABELS[field.type] ?? field.type,
+      requiredText: field.required ? 'Yes' : 'No',
+      listedText: field.listed ? 'Yes' : 'No',
+      ownerText: field.owner || 'Custom',
+      scopeText: field.category ? field.categoryName : 'Every item',
+      optionsText: field.options.join(', '),
+      cropText: field.type === 'media' ? [field.imageRatio ? field.imageRatio.replace(' / ', ':') : '', field.imageMax ? `max ${field.imageMax}px` : ''].filter(Boolean).join(', ') : '',
+    });
+
+    /* The types that can be created right now; "media" is absent when kempo-media is not installed. */
+    let creatableTypes = Object.keys(TYPE_LABELS);
+    /* Which type changes are safe, from the server: { select: ['text'], text: ['longtext'] }. */
+    let conversions = {};
+
+    /* '' = every field, '*' = the default fields only, otherwise a category key. */
+    const $scope = document.getElementById('scopeFilter');
+    let categories = [];
+    let allFields = [];
+    const wanted = new URLSearchParams(location.search).get('category');
+    let scope = wanted ? wanted.trim().replace(/\s+/g, ' ').toLowerCase() : '';
+
+    const renderScopeOptions = () => {
+      $scope.replaceChildren(...[['', 'All fields'], ['*', 'Every item (default fields)'], ...categories.map(c => [c.key, c.name])].map(([value, label]) => {
+        const $option = document.createElement('option');
+        $option.value = value;
+        $option.textContent = label;
+        $option.selected = value === scope;
+        return $option;
+      }));
+    };
+    const renderTable = () => {
+      const visible = allFields.filter(f => scope === '' || (scope === '*' ? !f.category : f.category === scope));
+      $table.setData({
+        records: visible.map(decorate),
+        fields: [
+          { name: 'label', label: 'Label', size: 200, editable: false },
+          { name: 'key', label: 'Key', size: 150, editable: false },
+          { name: 'scopeText', label: 'Applies to', size: 170, editable: false },
+          { name: 'typeText', label: 'Type', size: 170, editable: false },
+          { name: 'requiredText', label: 'Required', size: 90, editable: false },
+          { name: 'listedText', label: 'In list', size: 80, editable: false },
+          { name: 'optionsText', label: 'Choices', size: 200, editable: false },
+          { name: 'cropText', label: 'Photo crop', size: 150, editable: false },
+          { name: 'ownerText', label: 'Managed by', size: 170, editable: false },
+        ],
+      });
+    };
+    $scope.addEventListener('change', () => { scope = $scope.value; renderTable(); });
+
+    const load = async () => {
+      const [categoriesError, categoryData] = await getCategories({ includeEmpty: true });
+      if(!categoriesError) categories = categoryData.categories;
+      const [error, data] = await getFields();
+      if(!error){
+        creatableTypes = data.types;
+        conversions = data.conversions ?? {};
+      }
+      if(error){
+        Toast.error(error.msg || 'Failed to load fields');
+        return;
+      }
+      allFields = data.fields;
+      renderScopeOptions();
+      renderTable();
+    };
+
+    $table.addEventListener('requestDelete', ({ detail: { records, approve, reject } }) => {
+      const [record] = records;
+      if(record.owner){
+        reject();
+        Toast.error(`"${record.label}" is managed by the ${record.owner} extension and cannot be deleted here`);
+        return;
+      }
+      Dialog.confirm(`Delete the field "${record.label}"? Its value is removed from ${record.category ? 'every item in that category' : 'every item'}. This action cannot be undone.`, async confirmed => {
+        if(!confirmed){ reject(); return; }
+        const [error] = await deleteField(record.key, { category: record.category });
+        if(error){
+          reject();
+          Toast.error(error.msg || 'Failed to delete field');
+          return;
+        }
+        approve();
+        Toast.success('Field deleted');
+        load();
+      });
+    });
+
+    const openFieldDialog = field => {
+      const editing = Boolean(field);
+      const managed = editing && Boolean(field.owner);
+      let keyTouched = editing;
+
+      const $dialog = Dialog.create(html`
+        <div class="p" style="max-height: calc(100vh - 14rem); overflow-y: auto;">
+          ${managed ? html`<p class="mb tc-muted">Managed by the ${field.owner} extension. You can rename it, change its description and choose whether it shows in the list.</p>` : ''}
+          <div class="mb">
+            <label class="d-b mb-sm" for="fld-label">Label *</label>
+            <input type="text" id="fld-label" class="full" .value=${field?.label ?? ''}
+              @input=${e => {
+                if(keyTouched) return;
+                $dialog.querySelector('#fld-key').value = keyFromLabel(e.target.value);
+              }}>
+          </div>
+          <div class="mb">
+            <label class="d-b mb-sm" for="fld-scope">Applies to</label>
+            <select id="fld-scope" class="full" ?disabled=${editing}>
+              <option value="" ?selected=${editing ? !field.category : scope === '' || scope === '*'}>Every item</option>
+              ${categories.map(c => html`<option value=${c.name} ?selected=${editing ? c.key === field.category : c.key === scope}>Only ${c.name}</option>`)}
+            </select>
+          </div>
+          <div class="d-f mb" style="gap: var(--spacer);">
+            <div class="flex">
+              <label class="d-b mb-sm" for="fld-key">Key *</label>
+              <input type="text" id="fld-key" class="full" ?disabled=${editing} .value=${field?.key ?? ''}
+                @input=${() => { keyTouched = true; }}>
+            </div>
+            <div class="flex">
+              <label class="d-b mb-sm" for="fld-type">Type *</label>
+              <select id="fld-type" class="full" ?disabled=${editing && (managed || !conversions[field.type]?.length)}>
+                ${Object.entries(TYPE_LABELS).filter(([value]) => editing
+                  ? value === field.type || (!managed && conversions[field.type]?.includes(value))
+                  : creatableTypes.includes(value)).map(([value, label]) => html`<option value=${value} ?selected=${value === (field?.type ?? 'text')}>${label}</option>`)}
+              </select>
+            </div>
+          </div>
+          <div id="fld-options-row" class="mb" style="display: none;">
+            <label class="d-b mb-sm" for="fld-options">Choices (one per line)</label>
+            <textarea id="fld-options" class="full" rows="4" ?disabled=${managed} .value=${field?.options.join('\n') ?? ''}></textarea>
+          </div>
+          <div id="fld-crop-row" class="mb" style="display: none;">
+            <div class="d-f" style="gap: var(--spacer);">
+              <div class="flex">
+                <label class="d-b mb-sm" for="fld-ratio">Force photo shape</label>
+                <input type="text" id="fld-ratio" class="full" placeholder="e.g. 1:1, 4:3, 16:9" autocomplete="off" .value=${field?.imageRatio ? field.imageRatio.replace(' / ', ':') : ''}>
+              </div>
+              <div style="width: 9rem;">
+                <label class="d-b mb-sm" for="fld-max">Max size (px)</label>
+                <input type="number" id="fld-max" class="full" min="0" max="8000" step="1" placeholder="no limit" .value=${field?.imageMax || ''}>
+              </div>
+            </div>
+            <small class="d-b tc-muted">Photos are cropped to this shape as they are added (a cropper opens, locked to it) and kept within the maximum size. Leave the shape empty to allow any shape; with only a maximum, photos are just scaled down.</small>
+          </div>
+          <div id="fld-suggest-row" class="mb" style="display: none;">
+            <k-toggle id="fld-suggest" .value=${Boolean(field?.suggest)}>Suggest values already used</k-toggle>
+            <small class="d-b tc-muted">Offers values from other items as you type, so repeated entries such as a brand stay consistent. Anything new can still be typed.</small>
+          </div>
+          <div class="mb">
+            <label class="d-b mb-sm" for="fld-description">Description</label>
+            <input type="text" id="fld-description" class="full" .value=${field?.description ?? ''}>
+          </div>
+          <div class="d-f mb" style="gap: var(--spacer); align-items: center;">
+            ${managed ? '' : html`<k-toggle id="fld-required" .value=${Boolean(field?.required)}>Required</k-toggle>`}
+            <k-toggle id="fld-listed" .value=${field ? Boolean(field.listed) : true}>Show in list</k-toggle>
+            <div class="flex"></div>
+            <div style="width: 7rem;">
+              <label class="d-b mb-sm" for="fld-position">Order</label>
+              <input type="number" id="fld-position" class="full" step="1" .value=${field?.position ?? 0}>
+            </div>
+          </div>
+        </div>
+      `, {
+        title: editing ? `Edit ${field.label}` : 'New Field',
+        confirmText: editing ? 'Save' : 'Create',
+        cancelText: 'Cancel',
+        confirmAction: async event => {
+          event.keepDialogOpen = true;
+          const value = id => $dialog.querySelector(id).value;
+          const data = {
+            label: value('#fld-label').trim(),
+            description: value('#fld-description'),
+            listed: $dialog.querySelector('#fld-listed').value === true,
+            suggest: $dialog.querySelector('#fld-suggest').value === true,
+            position: Number(value('#fld-position') || 0),
+          };
+          if($type.value === 'media'){
+            data.imageRatio = value('#fld-ratio').trim();
+            data.imageMax = Number(value('#fld-max') || 0);
+          }
+          if(!managed){
+            data.required = $dialog.querySelector('#fld-required').value === true;
+            data.options = value('#fld-options').split('\n').map(o => o.trim()).filter(Boolean);
+          }
+          if(!data.label){
+            Toast.error('A label is required');
+            return;
+          }
+          let error;
+          if(editing){
+            if(value('#fld-type') !== field.type) data.type = value('#fld-type');
+            [error] = await updateField(field.key, data, { category: field.category });
+          } else {
+            [error] = await createField({ ...data, key: value('#fld-key').trim(), type: value('#fld-type'), category: value('#fld-scope') });
+          }
+          if(error){
+            Toast.error(error.msg || 'Failed to save field');
+            return;
+          }
+          $dialog.close();
+          Toast.success(editing ? 'Field saved' : 'Field created');
+          load();
+        },
+      });
+
+      const $type = $dialog.querySelector('#fld-type');
+      const syncOptions = () => {
+        $dialog.querySelector('#fld-options-row').style.display = $type.value === 'select' ? '' : 'none';
+        $dialog.querySelector('#fld-suggest-row').style.display = $type.value === 'text' ? '' : 'none';
+        $dialog.querySelector('#fld-crop-row').style.display = $type.value === 'media' ? '' : 'none';
+      };
+      $type.addEventListener('change', syncOptions);
+      syncOptions();
+    };
+
+    $table.addEventListener('itemAction', ({ detail: { action, record } }) => {
+      if(action === 'edit') openFieldDialog(record);
+    });
+    document.getElementById('newFieldBtn')?.addEventListener('click', () => openFieldDialog(null));
+
+    await load();
+  </script>
+</content>
+</page>

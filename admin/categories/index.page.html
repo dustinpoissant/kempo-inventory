@@ -1,0 +1,229 @@
+<!--
+locked: true
+-->
+<page title="Inventory Categories - Admin">
+<content>
+  <script type="module" src="/kempo-ui/components/Table.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcDeleteRecord.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcSearch.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcFirstPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPrevPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcNextPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcLastPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPageSelect.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPageSize.js"></script>
+  <script type="module" src="/kempo-ui/components/Icon.js"></script>
+  <script type="module" src="/kempo/components/Permission.js"></script>
+  <script type="module" src="/inventory/components/RowAction.js"></script>
+
+  <div class="d-f mb" style="align-items: center; gap: var(--spacer);">
+    <a href="/admin/extension/kempo-inventory/" class="btn"><k-icon name="arrow" direction="left"></k-icon> Inventory</a>
+    <h1 class="flex mb0">Categories</h1>
+  </div>
+  <p class="mb tc-muted">
+    An item's category is the text in its Category box, so a category appears here as soon as an item uses it.
+    Here you can give each one a picture and a description, set up fields that only items in it have (the gear button), rename it (which updates its items, and merges it
+    into another category if you pick a name that already exists), or add one before any item uses it.
+  </p>
+
+  <k-table id="categoriesTable" enable-pages page-size="25" page-size-options="[10,25,50]" placeholder="No categories yet." filtered-placeholder="No categories match your search.">
+    <div slot="top" class="d-f full" style="align-items: center; gap: var(--spacer_h); flex-wrap: wrap;">
+      <kc-tc-search style="width: 16rem"></kc-tc-search>
+      <div class="flex"></div>
+      <k-permission has="kempo-inventory:items:update">
+        <button id="newCategoryBtn" class="primary m0"><k-icon name="add"></k-icon> New Category</button>
+      </k-permission>
+    </div>
+    <div class="d-f full" style="align-items: center;">
+      <div>
+        <kc-tc-first-page></kc-tc-first-page>
+        <kc-tc-prev-page></kc-tc-prev-page>
+        <kc-tc-next-page></kc-tc-next-page>
+        <kc-tc-last-page></kc-tc-last-page>
+      </div>
+      <div class="flex"></div>
+      <div><kc-tc-page-select></kc-tc-page-select></div>
+      <div class="flex"></div>
+      <div><kc-tc-page-size></kc-tc-page-size></div>
+    </div>
+  </k-table>
+  <p id="uncategorised" class="mt tc-muted"></p>
+
+  <script type="module">
+    import { getCategories, saveCategory, deleteCategory } from '/inventory/sdk.js';
+    import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
+    import { html } from '/kempo-ui/lit-all.min.js';
+    import Toast from '/kempo-ui/components/Toast.js';
+    import Dialog from '/kempo-ui/components/Dialog.js';
+    import { tagsValue, suggestTags, readTags, lowerTagInput, lowerTagChips } from '/inventory/components/ItemFields.js';
+
+    await window.customElements.whenDefined('k-table');
+    const $table = document.getElementById('categoriesTable');
+
+    const [, permData] = await getAllCurrentUserPermissions();
+    const canEdit = new Set(permData?.permissions ?? []).has('kempo-inventory:items:update');
+
+    const manageFields = document.createElement('inventory-row-action');
+    manageFields.setAttribute('slot', 'before');
+    manageFields.setAttribute('action', 'fields');
+    manageFields.setAttribute('icon', 'settings');
+    manageFields.setAttribute('title', 'Fields for this category');
+    $table.appendChild(manageFields);
+
+    if(canEdit){
+      const edit = document.createElement('inventory-row-action');
+      edit.setAttribute('slot', 'before');
+      edit.setAttribute('action', 'edit');
+      edit.setAttribute('icon', 'edit');
+      edit.setAttribute('title', 'Edit');
+      $table.appendChild(edit);
+
+      $table.setAttribute('request-delete', '');
+      const del = document.createElement('kc-tc-delete-record');
+      del.setAttribute('slot', 'after');
+      $table.appendChild(del);
+    }
+
+    const keyOf = name => String(name ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+    let categories = [];
+
+    /* Plain strings only, so a name or description can never be read as markup. */
+    const decorate = c => ({
+      ...c,
+      itemsText: String(c.count),
+      imageText: c.image ? 'Yes' : '',
+      fieldsText: String(c.fields),
+      tagsText: c.tags.join(', '),
+      ownerText: c.owner,
+    });
+
+    const load = async () => {
+      const [error, data] = await getCategories({ includeEmpty: true });
+      if(error){
+        Toast.error(error.msg || 'Failed to load the categories');
+        return;
+      }
+      categories = data.categories;
+      $table.setData({
+        records: categories.map(decorate),
+        fields: [
+          { name: 'name', label: 'Name', size: 220, editable: false },
+          { name: 'itemsText', label: 'Items', size: 80, editable: false },
+          { name: 'fieldsText', label: 'Fields', size: 80, editable: false },
+          { name: 'description', label: 'Description', size: 300, editable: false },
+          { name: 'tagsText', label: 'Tags', size: 200, editable: false },
+          { name: 'imageText', label: 'Image', size: 80, editable: false },
+          ...(categories.some(c => c.owner) ? [{ name: 'ownerText', label: 'Managed by', size: 170, editable: false }] : []),
+        ],
+      });
+      document.getElementById('uncategorised').textContent = data.uncategorised
+        ? `${data.uncategorised} item${data.uncategorised === 1 ? ' has' : 's have'} no category.`
+        : '';
+    };
+
+    /* One dialog for new and edit. Saving always sends what the dialog shows, so it is the source of truth. */
+    const openDialog = category => {
+      const editing = Boolean(category);
+      const $dialog = Dialog.create(html`
+        <div class="p" style="max-height: calc(100vh - 14rem); overflow-y: auto;">
+          <div class="mb">
+            <label class="d-b mb-sm" for="cat-name">Name *</label>
+            <input type="text" id="cat-name" class="full" maxlength="100" ?disabled=${editing && category.owner} .value=${category?.name ?? ''}>
+            ${editing && category.owner ? html`<small class="d-b tc-muted">Managed by the ${category.owner} extension, which is the only one that can rename it. You can still change everything else.</small>` : ''}
+            ${editing && !category.owner && category.count ? html`<small class="d-b tc-muted">Renaming also changes the category on its ${category.count} item${category.count === 1 ? '' : 's'}.</small>` : ''}
+          </div>
+          <div class="mb">
+            <label class="d-b mb-sm" for="cat-description">Description</label>
+            <textarea id="cat-description" class="full" rows="3" maxlength="500" .value=${category?.description ?? ''}></textarea>
+          </div>
+          <div class="mb">
+            <label class="d-b mb-sm" for="cat-tags">Tags</label>
+            <k-tags id="cat-tags" .value=${tagsValue(category?.tags)} .getSuggestions=${suggestTags} @input=${lowerTagInput} @change=${lowerTagChips}></k-tags>
+          </div>
+          <div class="mb">
+            <label class="d-b mb-sm">Image</label>
+            <inventory-media-field id="cat-image" ratio-for="category" .max=${1} .value=${category?.image ? [category.image.id] : []} .assets=${category?.image ? { [category.image.id]: category.image } : {}}></inventory-media-field>
+          </div>
+        </div>
+      `, {
+        title: editing ? `Edit ${category.name}` : 'New Category',
+        confirmText: editing ? 'Save' : 'Create',
+        cancelText: 'Cancel',
+        confirmAction: async event => {
+          event.keepDialogOpen = true;
+          const name = $dialog.querySelector('#cat-name').value.trim();
+          if(!name){
+            Toast.error('A name is required');
+            return;
+          }
+          const changes = {
+            description: $dialog.querySelector('#cat-description').value,
+            tags: readTags($dialog.querySelector('#cat-tags')),
+            image: $dialog.querySelector('#cat-image').value[0] ?? null,
+          };
+
+          let error, result;
+          if(editing){
+            if(name !== category.name && !category.owner) changes.newName = name;
+            [error, result] = await saveCategory(category.name, changes);
+          } else {
+            /* Creating must not silently overwrite one that is already there. */
+            if(categories.some(c => keyOf(c.name) === keyOf(name))){
+              Toast.error('That category already exists. Edit it instead');
+              return;
+            }
+            [error, result] = await saveCategory(name, changes);
+          }
+          if(error){
+            Toast.error(error.msg || 'Failed to save the category');
+            return;
+          }
+          $dialog.close();
+          const moved = result.category.moved;
+          Toast.success(!editing ? 'Category created' : moved ? `Saved. ${moved} item${moved === 1 ? '' : 's'} updated` : 'Category saved');
+          load();
+        },
+      });
+    };
+
+    $table.addEventListener('itemAction', ({ detail: { action, record } }) => {
+      if(action === 'edit') openDialog(categories.find(c => c.key === record.key));
+      if(action === 'fields') location.href = `/admin/extension/kempo-inventory/fields?category=${encodeURIComponent(record.name)}`;
+    });
+    document.getElementById('newCategoryBtn')?.addEventListener('click', () => openDialog(null));
+
+    $table.addEventListener('requestDelete', ({ detail: { records, approve, reject } }) => {
+      const [record] = records;
+      if(record.owner){
+        reject();
+        Toast.error(`"${record.name}" is managed by the ${record.owner} extension and cannot be deleted here`);
+        return;
+      }
+      if(record.fields){
+        reject();
+        Toast.error(`"${record.name}" still has ${record.fields} field${record.fields === 1 ? '' : 's'}. Delete ${record.fields === 1 ? 'it' : 'them'} first`);
+        return;
+      }
+      if(record.count){
+        reject();
+        Toast.error(`${record.count} item${record.count === 1 ? ' is' : 's are'} still in "${record.name}". Move or clear ${record.count === 1 ? 'it' : 'them'} first`);
+        return;
+      }
+      Dialog.confirm(`Delete the category "${record.name}"? Its image and description are removed. This action cannot be undone.`, async confirmed => {
+        if(!confirmed){ reject(); return; }
+        const [error] = await deleteCategory(record.name);
+        if(error){
+          reject();
+          Toast.error(error.msg || 'Failed to delete the category');
+          return;
+        }
+        approve();
+        Toast.success('Category deleted');
+        load();
+      });
+    });
+
+    await load();
+  </script>
+</content>
+</page>

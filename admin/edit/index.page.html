@@ -1,0 +1,51 @@
+<!--
+locked: true
+-->
+<page title="Edit Item - Admin">
+<content>
+  <script type="module" src="/kempo-ui/components/Icon.js"></script>
+
+  <div class="d-f mb" style="align-items: center; gap: var(--spacer);">
+    <a href="/admin/extension/kempo-inventory/" class="btn" id="backLink"><k-icon name="arrow" direction="left"></k-icon> Inventory</a>
+    <h1 class="flex mb0" id="title">Edit Item</h1>
+  </div>
+
+  <div id="editItem" style="max-width: 44rem;"></div>
+
+  <script type="module">
+    import { getItem, getFields } from '/inventory/sdk.js';
+    import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
+    import Toast from '/kempo-ui/components/Toast.js';
+    import { mountEditItemPage, safeNext } from '/inventory/components/NewItemPage.js';
+    import { showFlash } from '/inventory/components/flash.js';
+
+    /* ?id= is the item; ?next= (a path on this site) is where to go after saving or cancelling. */
+    const params = new URLSearchParams(location.search);
+    const next = safeNext(params.get('next'), '/admin/extension/kempo-inventory/');
+    document.getElementById('backLink').href = next;
+    const $container = document.getElementById('editItem');
+
+    const [, permData] = await getAllCurrentUserPermissions();
+    if(!new Set(permData?.permissions ?? []).has('kempo-inventory:items:update')){
+      $container.innerHTML = '<p class="tc-danger">Your account is not allowed to edit items.</p>';
+    } else {
+      const [[itemError, data], [fieldsError, fieldData]] = await Promise.all([getItem(params.get('id')), getFields()]);
+      if(itemError || fieldsError){
+        const error = itemError || fieldsError;
+        $container.innerHTML = `<p class="tc-danger">${error.code === 404 ? 'Item not found.' : 'Something went wrong loading the item.'}</p>`;
+        Toast.error(error.msg || 'Failed to load the item');
+      } else {
+        document.getElementById('title').textContent = `Edit ${data.item.name}`;
+        mountEditItemPage({
+          $container,
+          item: data.item,
+          fields: fieldData.fields,
+          context: { linked: data.linked, media: data.media, ownId: data.item.id },
+          next,
+        });
+      }
+    }
+    showFlash();
+  </script>
+</content>
+</page>
