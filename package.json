@@ -1,6 +1,6 @@
 {
   "name": "kempo-inventory",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A basic inventory management system for kempo cms",
   "license": "MIT",
   "author": "Dustin Poissant",
