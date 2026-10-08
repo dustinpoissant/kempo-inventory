@@ -314,7 +314,8 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `createItem({ sku, name, description, quantity, fields, userId }, { owner })` | Create. `owner` makes it your extension's |
 | `updateItem(id, { sku, name, description, fields, userId }, { owner })` | Update; `fields` is merged, and an empty value clears a field. SKU, name and category of an owned item need its `owner` |
 | `deleteItem(id, { userId, owner })` | Delete an item and its history (owned items need their `owner`) |
-| `adjustStock(id, { delta, reason, note, userId })` | The only way quantity changes, for anyone. Atomic; refuses to go below zero |
+| `adjustStock(id, { delta, reason, note, userId })` | The way quantity changes, for anyone. Atomic; refuses to go below zero |
+| `adjustStockMany(changes, { reason, note, ref, userId, owner })` | Several stock changes together: every one happens or none does. `changes` is `[{ id, delta }]`. Use it when one event touches several items, such as the materials of a recipe |
 | `unregisterItems(owner, { release })` | Delete every item you own, or with `release` hand them back to people |
 | `getMovements({ itemId, limit, offset })` | Stock history |
 | `getFields({ category, owner })`, `getField(key, category)` | Read field definitions. `getFields()` is every field (each with its `category` key and `categoryName`); with `category` it is what an item in that category shows |
@@ -327,6 +328,26 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `FIELD_TYPES`, `EVENTS` | The field types and the hook event names |
 
 An item looks like `{ id, sku, name, description, category, tags, quantity, fields: { ...custom values }, owner, created, updated }`.
+
+### Several items at once
+
+`adjustStock` changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. `adjustStockMany` applies the whole set together:
+
+```javascript
+import { adjustStockMany } from 'kempo-inventory/sdk';
+
+const [error, { items }] = await adjustStockMany(
+  [{ id: resin.id, delta: -175 }, { id: paint.id, delta: -20 }],
+  { reason: 'sale', ref: 'order-1042', owner: 'my-extension' },
+);
+// error.code 409 and error.msg "Insufficient stock of Paint (ml)": nothing changed
+```
+
+Changes to the same item are added together and one that nets to nothing is left out. Every item goes through the same `before_adjust` guard as `adjustStock`, and each fires `stock:adjusted` once everything is committed. `ref` is written on every stock movement (as `[order-1042]` in its note) so the change can be found, and reversed, later.
+
+### Adding to the item page
+
+An extension can add to the admin item page by supplying a fragment named `inventory-item-actions`, in `admin/inventory-item-actions.fragment.html` in its own package. It appears under the item form, and reads the item from `?id=` in the address. (kempo-products-inventory uses it for "Make product from this item".)
 
 ### Hooks
 

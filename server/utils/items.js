@@ -377,6 +377,102 @@ export const adjustStock = async (id, { delta, reason = 'adjustment', note = '',
   }
 };
 
+/*
+  Thrown inside a transaction to roll everything back with a message the caller can show.
+*/
+class Refusal {
+  constructor(error){
+    this.error = error;
+  }
+}
+
+/*
+  Applies several stock changes together: every one happens or none does. This is what makes
+  taking the materials for a whole recipe safe, where one adjustStock per item could take the resin
+  and then fail on the paint. `changes` is [{ id, delta, reason?, note? }]; changes to the same item
+  are added together, and one that nets to nothing is left out. Each item runs through the same
+  before_adjust guard as adjustStock, and fires the same stock:adjusted notification once everything
+  is committed.
+
+    const [error, result] = await adjustStockMany(
+      [{ id: resin.id, delta: -175 }, { id: paint.id, delta: -20 }],
+      { reason: 'sale', ref: 'order-1042', owner: 'my-extension' },
+    );
+
+  `ref` is recorded on every movement so the change can be found and reversed later. A refusal for
+  lack of stock is a 409 that names the item, and nothing has changed. Resolves to
+  [null, { items }] with the items as they are now.
+*/
+export const adjustStockMany = async (changes, { reason = 'adjustment', note = '', ref = '', userId = '', owner = '' } = {}) => {
+  if(!Array.isArray(changes) || !changes.length) return [{ code: 400, msg: 'changes must be a non-empty list' }, null];
+
+  const totals = new Map();
+  for(const change of changes){
+    const id = String(change?.id ?? '');
+    const delta = toInt(change?.delta, NaN);
+    if(!id) return [{ code: 400, msg: 'Every change needs an item id' }, null];
+    if(Number.isNaN(delta)) return [{ code: 400, msg: 'Every delta must be a whole number' }, null];
+    const entry = totals.get(id) ?? { id, delta: 0, reason: change.reason, note: change.note };
+    entry.delta += delta;
+    totals.set(id, entry);
+  }
+  /* In a fixed order, so two overlapping calls lock rows the same way round and cannot deadlock. */
+  const wanted = [...totals.values()].filter(entry => entry.delta !== 0).sort((a, b) => a.id.localeCompare(b.id));
+  if(!wanted.length) return [null, { items: [] }];
+
+  let rows;
+  try {
+    rows = await db.select().from(kempoInventoryItem).where(inArray(kempoInventoryItem.id, wanted.map(entry => entry.id)));
+  } catch {
+    return [{ code: 500, msg: 'Failed to adjust stock' }, null];
+  }
+  const existing = new Map(rows.map(row => [row.id, shape(row)]));
+  const missing = wanted.find(entry => !existing.has(entry.id));
+  if(missing) return [{ code: 404, msg: 'An item in this change no longer exists' }, null];
+
+  const drafts = new Map();
+  for(const entry of wanted){
+    const draft = { delta: entry.delta, reason: entry.reason ?? reason, note: entry.note ?? note };
+    const refused = await guard(EVENTS.stockBeforeAdjust, { item: existing.get(entry.id), draft, userId, actor: owner });
+    if(refused) return [refused, null];
+    const delta = toInt(draft.delta, NaN);
+    if(Number.isNaN(delta) || delta === 0) return [{ code: 400, msg: 'delta must be a non-zero whole number' }, null];
+    drafts.set(entry.id, { delta, reason: String(draft.reason || 'adjustment'), note: String(draft.note || '') });
+  }
+
+  try {
+    const applied = await db.transaction(async tx => {
+      const results = [];
+      for(const entry of wanted){
+        const { delta, reason: why, note: text } = drafts.get(entry.id);
+        const [row] = await tx.update(kempoInventoryItem)
+          .set({ quantity: sql`${kempoInventoryItem.quantity} + ${delta}`, updated: new Date() })
+          .where(and(eq(kempoInventoryItem.id, entry.id), sql`${kempoInventoryItem.quantity} + ${delta} >= 0`))
+          .returning();
+        if(!row) throw new Refusal({ code: 409, msg: `Insufficient stock of ${existing.get(entry.id).name}` });
+        const [movement] = await tx.insert(kempoInventoryMovement).values({
+          id: newId(), itemId: entry.id, delta, quantityAfter: row.quantity, reason: why,
+          note: ref ? `${text ? `${text} ` : ''}[${ref}]` : text, userId, created: new Date(),
+        }).returning();
+        results.push({ row, movement, delta });
+      }
+      return results;
+    });
+    const items = [];
+    for(const { row, movement, delta } of applied){
+      const item = shape(row);
+      items.push(item);
+      await notify(EVENTS.stockAdjusted, {
+        item, previousQuantity: item.quantity - delta, delta, reason: movement.reason, note: movement.note, movement, userId, actor: owner,
+      });
+    }
+    return [null, { items }];
+  } catch(error) {
+    if(error instanceof Refusal) return [error.error, null];
+    return [{ code: 500, msg: 'Failed to adjust stock' }, null];
+  }
+};
+
 export const getMovements = async ({ itemId, limit = 50, offset = 0 } = {}) => {
   try {
     const where = itemId ? eq(kempoInventoryMovement.itemId, itemId) : undefined;

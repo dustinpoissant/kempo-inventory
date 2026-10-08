@@ -32,6 +32,7 @@ export {
   deleteItem,
   unregisterItems,
   adjustStock,
+  adjustStockMany,
   getMovements,
 } from './server/utils/items.js';
 

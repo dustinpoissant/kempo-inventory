@@ -6,6 +6,9 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ### Added
 
+- **`adjustStockMany`**: several stock changes applied together, all or nothing, with a reference written on every movement so they can be reversed. For events that touch several items, such as the materials of a recipe.
+- An **`inventory-item-actions` fragment** on the admin item page, so another extension can add to it.
+
 First public release. An inventory core for kempo: items with a SKU, name, category, tags and
 stock, custom fields, categories with images, an audited stock history, import and export, and a
 server SDK and hooks for other extensions to build on.

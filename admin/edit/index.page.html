@@ -12,6 +12,12 @@ locked: true
 
   <div id="editItem" style="max-width: 44rem;"></div>
 
+  <!--
+    An extension can add to this page by supplying a fragment with this name in its own admin/
+    directory (inventory-item-actions.fragment.html). It reads the item from ?id= in the address.
+  -->
+  <fragment name="inventory-item-actions"></fragment>
+
   <script type="module">
     import { getItem, getFields } from '/inventory/sdk.js';
     import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
