@@ -6,6 +6,7 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ### Added
 
+- A **documentation site** (`docs-src/` built into `docs/` for GitHub Pages) with screenshots of the admin.
 - **`adjustStockMany`**: several stock changes applied together, all or nothing, with a reference written on every movement so they can be reversed. For events that touch several items, such as the materials of a recipe.
 - An **`inventory-item-actions` fragment** on the admin item page, so another extension can add to it.
 
