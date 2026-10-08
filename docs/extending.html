@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building on it - Kempo Inventory</title>
+  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Inventory
+    </a>
+    <a href="./items.html" class="m-d-n">Items</a>
+    <a href="./extending.html" class="m-d-n">Building on it</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Inventory</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./items.html">Items and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./items.html#items" class="d-b">Items</a>
+        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#tags" class="d-b">Tags</a>
+        <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
+      </div>
+      <h5><a href="./fields.html">Fields and categories</a></h5>
+      <div class="ml mb -mt">
+        <a href="./fields.html#custom-fields" class="d-b">Custom fields</a>
+        <a href="./fields.html#suggestions" class="d-b">Suggested values</a>
+        <a href="./fields.html#category-fields" class="d-b">Fields for one category</a>
+        <a href="./fields.html#categories" class="d-b">Categories</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#security" class="d-b">How a file is handled</a>
+      </div>
+      <h5><a href="./access.html">Photos and access</a></h5>
+      <div class="ml mb -mt">
+        <a href="./access.html#who-reads" class="d-b">Who can read</a>
+        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#photos" class="d-b">Photos and files</a>
+        <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
+      </div>
+      <h5><a href="./sites.html">On your own site</a></h5>
+      <div class="ml mb -mt">
+        <a href="./sites.html#browser-sdk" class="d-b">Browser SDK</a>
+        <a href="./sites.html#pages" class="d-b">Adding and editing items</a>
+        <a href="./sites.html#scanner" class="d-b">The barcode scanner</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#adjust-many" class="d-b">Several items at once</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#item-actions" class="d-b">Adding to the item page</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#notes" class="d-b">Notes</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Building on it</h1>
+    
+    <p>An extension that adds to inventory declares the dependency, registers its fields, and cleans up after itself.</p>
+    <pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;dependencies&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;kempo-inventory&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;hooks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;kempo-inventory:item:before_create&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/before-create.js&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;kempo-inventory:stock:adjusted&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/stock-adjusted.js&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// install.js</span>
+<span class="hljs-keyword">import</span> { registerFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; {
+  <span class="hljs-keyword">const</span> [error] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerFields</span>(<span class="hljs-string">&#x27;kempo-inventory-reorder&#x27;</span>, [
+    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;reorderLevel&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Reorder level&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;number&#x27;</span> },
+    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;supplier&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Supplier&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;item&#x27;</span> },
+  ]);
+  <span class="hljs-keyword">if</span>(error) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(error.<span class="hljs-property">msg</span>);
+};
+
+<span class="hljs-comment">// uninstall.js</span>
+<span class="hljs-keyword">import</span> { unregisterFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; { <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterFields</span>(<span class="hljs-string">&#x27;kempo-inventory-reorder&#x27;</span>); };</code></pre>
+    <p><code>registerFields</code> is idempotent, so it is safe to call again on update. It refuses to take a key another owner holds, or to change an existing field's type. Kempo stops a dependency being uninstalled while something that depends on it is enabled.</p>
+
+    <h2 id="sdk" class="mt">Server SDK</h2>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getItems, createItem, adjustStock, registerFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;</code></pre>
+    <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>getItems({ q, filters, ids, owner, limit, offset })</code></td><td>List and search. <code>filters</code> is <code>{ fieldKey: 'exact value' }</code>, <code>ids</code> fetches exactly those items, <code>owner</code> keeps one owner's. Returns <code>{ items, total, linked }</code></td></tr>
+          <tr><td><code>getItem(id)</code>, <code>getItemBySku(sku)</code></td><td>One item</td></tr>
+          <tr><td><code>getLinked(items)</code></td><td>Resolves <code>item</code>-type values to <code>{ id, sku, name }</code></td></tr>
+          <tr><td><code>createItem({ sku, name, description, quantity, fields, userId }, { owner })</code></td><td>Create. <code>owner</code> makes it your extension's</td></tr>
+          <tr><td><code>updateItem(id, { sku, name, description, fields, userId }, { owner })</code></td><td>Update. <code>fields</code> is merged, and an empty value clears a field. SKU, name and category of an owned item need its <code>owner</code></td></tr>
+          <tr><td><code>deleteItem(id, { userId, owner })</code></td><td>Delete an item and its history (owned items need their <code>owner</code>)</td></tr>
+          <tr><td><code>adjustStock(id, { delta, reason, note, userId })</code></td><td>The way quantity changes, for anyone. Atomic, and refuses to go below zero</td></tr>
+          <tr><td><code>adjustStockMany(changes, { reason, note, ref, userId, owner })</code></td><td>Several stock changes together: every one happens or none does. See <a href="#adjust-many">below</a></td></tr>
+          <tr><td><code>unregisterItems(owner, { release })</code></td><td>Delete every item you own, or with <code>release</code> hand them back to people</td></tr>
+          <tr><td><code>getMovements({ itemId, limit, offset })</code></td><td>Stock history</td></tr>
+          <tr><td><code>getFields({ category, owner })</code>, <code>getField(key, category)</code></td><td>Read field definitions. <code>getFields()</code> is every field (each with its <code>category</code> key and <code>categoryName</code>). With <code>category</code> it is what an item in that category shows</td></tr>
+          <tr><td><code>createField(definition)</code>, <code>updateField(key, changes)</code>, <code>deleteField(key)</code></td><td>Manage user-defined fields</td></tr>
+          <tr><td><code>getCategories({ includeEmpty, owner })</code>, <code>saveCategory(name, { newName, image, description, tags }, { owner })</code>, <code>deleteCategory(name, { owner })</code></td><td>The categories, and managing them</td></tr>
+          <tr><td><code>registerCategory(owner, { name, description, tags, image }, { adopt })</code>, <code>unregisterCategories(owner)</code></td><td>Add categories owned by your extension, and remove them</td></tr>
+          <tr><td><code>getSuggestions(key, { q, limit, category })</code></td><td>Values already used for a text field, ranked for what has been typed</td></tr>
+          <tr><td><code>registerField(owner, definition)</code>, <code>registerFields(owner, definitions)</code></td><td>Add fields owned by your extension. <code>definition.category</code> scopes one to a category</td></tr>
+          <tr><td><code>unregisterFields(owner)</code></td><td>Remove every field your extension owns, and their values</td></tr>
+          <tr><td><code>FIELD_TYPES</code>, <code>EVENTS</code></td><td>The field types and the hook event names</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>An item looks like <code>{ id, sku, name, description, category, tags, quantity, fields: { ...custom values }, owner, created, updated }</code>.</p>
+
+    <h2 id="ownership" class="mt">Ownership</h2>
+    <p>Fields, categories and items can each belong to an extension. <code>owner</code> is <code>''</code> for what people manage in the admin, or the name of the extension that created it. Ownership protects what the owner builds on, and leaves the rest alone so its items stay useful in the admin.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th></th><th>Only the owner can</th><th>Anyone with the permission can still</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Field</strong></td><td>Delete it, change its key, type (within the safe conversions), requirement or options</td><td>Rename it, change its description, list and suggest settings and position</td></tr>
+          <tr><td><strong>Category</strong></td><td>Rename it (which rewrites its items), merge into or out of it, delete it</td><td>Change its image, description and tags, and put items in it</td></tr>
+          <tr><td><strong>Item</strong></td><td>Change its SKU, name and category, delete it</td><td>Edit description, tags and custom field values, and <strong>adjust stock</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A category cannot be renamed or merged by anyone but its owner while it holds items or fields another extension owns, because that would rewrite them. Sending an owned item's current SKU, name and category back unchanged is not a change, so the admin form keeps working.</p>
+    <p><strong>Ownership only comes from the server SDK.</strong> The HTTP routes never read an owner from a request, so the admin and the JSON API always act as people (<code>''</code>), and an extension cannot be impersonated from the browser. An extension calling the SDK passes its own name as <code>owner</code> to act as the owner. Leave it out and it is treated as people, so it cannot rename or delete another extension's records, or even one a person made.</p>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// install.js</span>
+<span class="hljs-keyword">import</span> { registerCategory, registerField } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; {
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerCategory</span>(<span class="hljs-string">&#x27;kempo-products&#x27;</span>, { <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Finished goods&#x27;</span>, <span class="hljs-attr">description</span>: <span class="hljs-string">&#x27;Ready to ship&#x27;</span> });
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerField</span>(<span class="hljs-string">&#x27;kempo-products&#x27;</span>, { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;price&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Price&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;number&#x27;</span>, <span class="hljs-attr">category</span>: <span class="hljs-string">&#x27;Finished goods&#x27;</span> });
+};
+
+<span class="hljs-comment">// at runtime</span>
+<span class="hljs-keyword">import</span> { createItem, updateItem, getItems } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
+<span class="hljs-keyword">const</span> [, item] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">createItem</span>({ <span class="hljs-attr">sku</span>: <span class="hljs-string">&#x27;CAR-1&#x27;</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Model car&#x27;</span>, <span class="hljs-attr">category</span>: <span class="hljs-string">&#x27;Finished goods&#x27;</span>, <span class="hljs-attr">quantity</span>: <span class="hljs-number">2</span> }, { <span class="hljs-attr">owner</span>: <span class="hljs-string">&#x27;kempo-products&#x27;</span> });
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">updateItem</span>(item.<span class="hljs-property">id</span>, { <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Model car v2&#x27;</span> }, { <span class="hljs-attr">owner</span>: <span class="hljs-string">&#x27;kempo-products&#x27;</span> });
+<span class="hljs-keyword">const</span> [, mine] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getItems</span>({ <span class="hljs-attr">owner</span>: <span class="hljs-string">&#x27;kempo-products&#x27;</span> });</code></pre>
+    <p><code>registerCategory</code> is idempotent. It refuses a category people already manage (409) unless <code>adopt</code> is set, which takes the record over (the items in it stay people's). An owner cannot be changed after creation. For <code>uninstall.js</code>, remove in this order:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { unregisterItems, unregisterFields, unregisterCategories } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; {
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterItems</span>(<span class="hljs-string">&#x27;kempo-products&#x27;</span>, { <span class="hljs-attr">release</span>: <span class="hljs-literal">true</span> }); <span class="hljs-comment">// or omit `release` to delete them and their history</span>
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterFields</span>(<span class="hljs-string">&#x27;kempo-products&#x27;</span>);
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterCategories</span>(<span class="hljs-string">&#x27;kempo-products&#x27;</span>);                <span class="hljs-comment">// ones still in use are handed back to people, not deleted</span>
+};</code></pre>
+    <p>To protect more than this (say, the <em>values</em> of a field you own), subscribe to the <a href="#hooks"><code>before_*</code> hooks</a>. Every payload carries <code>actor</code>, the extension making the change or <code>''</code> for a person.</p>
+
+    <h2 id="adjust-many" class="mt">Several items at once</h2>
+    <p><code>adjustStock</code> changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. <code>adjustStockMany</code> applies the whole set together:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { adjustStockMany } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
+
+<span class="hljs-keyword">const</span> [error, { items }] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">adjustStockMany</span>(
+  [{ <span class="hljs-attr">id</span>: resin.<span class="hljs-property">id</span>, <span class="hljs-attr">delta</span>: -<span class="hljs-number">175</span> }, { <span class="hljs-attr">id</span>: paint.<span class="hljs-property">id</span>, <span class="hljs-attr">delta</span>: -<span class="hljs-number">20</span> }],
+  { <span class="hljs-attr">reason</span>: <span class="hljs-string">&#x27;sale&#x27;</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">&#x27;order-1042&#x27;</span>, <span class="hljs-attr">owner</span>: <span class="hljs-string">&#x27;my-extension&#x27;</span> },
+);
+<span class="hljs-comment">// error.code 409 and error.msg &quot;Insufficient stock of Paint (ml)&quot;: nothing changed</span></code></pre>
+    <p>Changes to the same item are added together, and one that nets to nothing is left out. Every item goes through the same <code>before_adjust</code> guard as <code>adjustStock</code>, and each fires <code>stock:adjusted</code> once everything is committed. <code>ref</code> is written on every stock movement (as <code>[order-1042]</code> in its note) so the change can be found, and reversed, later.</p>
+
+    <h2 id="hooks" class="mt">Hooks</h2>
+    <p>Declare these in your <code>kempo-config.json</code> <code>hooks</code>. Every payload also carries <code>actor</code>: the extension that made the change through the SDK, or <code>''</code> for a person using the admin.</p>
+    <h3>Guards</h3>
+    <p>Guards run <strong>before</strong> the work and can change it or refuse it. The payload holds a mutable object: edit it in place to change what gets saved, or <code>throw { code, msg }</code> to refuse, and the caller receives exactly that error. Everything is validated <em>after</em> guards run, so a guard cannot sneak in a value that would not otherwise be accepted. A guard that throws anything other than <code>{ code, msg }</code> is logged and reported to the user generically.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th><th>Edit / refuse</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-inventory:item:before_create</code></td><td><code>{ draft: { sku, name, description, quantity, fields }, userId }</code></td><td>edit <code>draft</code></td></tr>
+          <tr><td><code>kempo-inventory:item:before_update</code></td><td><code>{ item, changes: { sku?, name?, description?, fields? }, userId }</code></td><td>edit <code>changes</code></td></tr>
+          <tr><td><code>kempo-inventory:item:before_delete</code></td><td><code>{ item, userId }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:stock:before_adjust</code></td><td><code>{ item, draft: { delta, reason, note }, userId }</code></td><td>edit <code>draft</code></td></tr>
+          <tr><td><code>kempo-inventory:category:before_update</code></td><td><code>{ name, newName, changes: { description?, tags?, image? }, userId }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:category:before_delete</code></td><td><code>{ category, name, userId }</code> (<code>category</code> is <code>null</code> for one with no record)</td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:field:before_create</code></td><td><code>{ draft }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:field:before_update</code></td><td><code>{ field, changes }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:field:before_delete</code></td><td><code>{ field }</code></td><td>refuse only</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Ownership is checked first, so these only run for changes that would otherwise go ahead.</p>
+    <h3>Notifications</h3>
+    <p>Notifications run <strong>after</strong> the change is committed. Nothing they do can undo it, and an error in one is logged without affecting the others.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-inventory:item:created</code></td><td><code>{ item, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:item:updated</code></td><td><code>{ item, previous, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:item:deleted</code></td><td><code>{ item, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:stock:adjusted</code></td><td><code>{ item, previousQuantity, delta, reason, note, movement, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:category:updated</code></td><td><code>{ category, previous, moved, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:category:deleted</code></td><td><code>{ category, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:field:created</code></td><td><code>{ field }</code></td></tr>
+          <tr><td><code>kempo-inventory:field:updated</code></td><td><code>{ field, previous }</code></td></tr>
+          <tr><td><code>kempo-inventory:field:deleted</code></td><td><code>{ field }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>For example, a low-stock check that reacts to every adjustment:</p>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// hooks/stock-adjusted.js</span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> ({ item }) =&gt; {
+  <span class="hljs-keyword">const</span> level = item.<span class="hljs-property">fields</span>.<span class="hljs-property">reorderLevel</span>;
+  <span class="hljs-keyword">if</span>(level !== <span class="hljs-literal">undefined</span> &amp;&amp; item.<span class="hljs-property">quantity</span> &lt;= level){
+    <span class="hljs-comment">// notify someone, create a purchase order, ...</span>
+  }
+};</code></pre>
+    <p>Hooks run one at a time, in registration order, and are awaited, so a slow handler delays the request that triggered it.</p>
+
+    <h2 id="item-actions" class="mt">Adding to the item page</h2>
+    <p>An extension can add to the admin item page by supplying a fragment named <code>inventory-item-actions</code>, in <code>admin/inventory-item-actions.fragment.html</code> in its own package. It appears under the item form, and reads the item from <code>?id=</code> in the address. (<a href="https://github.com/dustinpoissant/kempo-products-inventory" target="_blank">kempo-products-inventory</a> uses it for "Make product from this item".)</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-inventory is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-inventory/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

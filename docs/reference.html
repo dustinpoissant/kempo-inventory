@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference - Kempo Inventory</title>
+  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Inventory
+    </a>
+    <a href="./items.html" class="m-d-n">Items</a>
+    <a href="./extending.html" class="m-d-n">Building on it</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Inventory</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./items.html">Items and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./items.html#items" class="d-b">Items</a>
+        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#tags" class="d-b">Tags</a>
+        <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
+      </div>
+      <h5><a href="./fields.html">Fields and categories</a></h5>
+      <div class="ml mb -mt">
+        <a href="./fields.html#custom-fields" class="d-b">Custom fields</a>
+        <a href="./fields.html#suggestions" class="d-b">Suggested values</a>
+        <a href="./fields.html#category-fields" class="d-b">Fields for one category</a>
+        <a href="./fields.html#categories" class="d-b">Categories</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#security" class="d-b">How a file is handled</a>
+      </div>
+      <h5><a href="./access.html">Photos and access</a></h5>
+      <div class="ml mb -mt">
+        <a href="./access.html#who-reads" class="d-b">Who can read</a>
+        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#photos" class="d-b">Photos and files</a>
+        <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
+      </div>
+      <h5><a href="./sites.html">On your own site</a></h5>
+      <div class="ml mb -mt">
+        <a href="./sites.html#browser-sdk" class="d-b">Browser SDK</a>
+        <a href="./sites.html#pages" class="d-b">Adding and editing items</a>
+        <a href="./sites.html#scanner" class="d-b">The barcode scanner</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#adjust-many" class="d-b">Several items at once</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#item-actions" class="d-b">Adding to the item page</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#notes" class="d-b">Notes</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Reference</h1>
+    
+    <h2 id="api">HTTP API</h2>
+    <p>Routes live under <code>/inventory/api</code>. Each requires a session holding the matching <a href="#permissions">permission</a>, unless the <a href="./access.html#who-reads"><code>public_read</code></a> setting lets anyone read.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Route</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /inventory/api/items?q=&amp;filters={"key":"value"}&amp;owner=&amp;limit=&amp;offset=</code></td><td>List and search. <code>owner</code> keeps one extension's items. Returns <code>{ items, total, linked, media }</code></td></tr>
+          <tr><td><code>POST /inventory/api/items</code></td><td>Create <code>{ sku, name, description?, quantity?, fields? }</code></td></tr>
+          <tr><td><code>GET /inventory/api/items/[id]</code></td><td>Item, recent movements and linked items</td></tr>
+          <tr><td><code>PATCH /inventory/api/items/[id]</code></td><td>Update <code>{ sku?, name?, description?, fields? }</code> (not quantity)</td></tr>
+          <tr><td><code>DELETE /inventory/api/items/[id]</code></td><td>Delete</td></tr>
+          <tr><td><code>POST /inventory/api/items/[id]/adjust</code></td><td><code>{ delta, reason?, note? }</code></td></tr>
+          <tr><td><code>GET /inventory/api/movements?itemId=</code></td><td>Movement history</td></tr>
+          <tr><td><code>GET /inventory/api/tags</code></td><td>Every tag in use, with how many things have it</td></tr>
+          <tr><td><code>GET /inventory/api/categories</code></td><td>The categories: <code>{ categories: [{ name, key, count, fields, image, description }], uncategorised, defaultFields }</code>. <code>?includeEmpty=true</code> includes ones no item uses</td></tr>
+          <tr><td><code>PUT /inventory/api/categories</code></td><td>Create or update <code>{ name, newName?, image?, description? }</code>. Only the keys sent change (needs <code>items:update</code>)</td></tr>
+          <tr><td><code>DELETE /inventory/api/categories</code></td><td>Delete <code>{ name }</code>. 409 while items use it (needs <code>items:update</code>)</td></tr>
+          <tr><td><code>GET /inventory/api/fields</code></td><td>Field definitions, each with its <code>category</code> (<code>''</code> = every item). <code>?category=Paint</code> returns what an item in that category shows</td></tr>
+          <tr><td><code>POST /inventory/api/fields</code></td><td>Create <code>{ label, type, key?, description?, required?, listed?, options?, position?, category? }</code>. <code>category</code> makes it apply to that category only</td></tr>
+          <tr><td><code>PATCH /inventory/api/fields/[key]?category=</code></td><td>Update a field (<code>category</code> identifies a category's field)</td></tr>
+          <tr><td><code>DELETE /inventory/api/fields/[key]?category=</code></td><td>Delete a user-defined field</td></tr>
+          <tr><td><code>GET /inventory/api/fields/[key]/suggestions?q=&amp;limit=&amp;category=</code></td><td>Values already used for a text field, most relevant first: <code>[{ value, uses }]</code>. Matches are ranked prefix first, then by use. With no <code>q</code>, the most used values</td></tr>
+          <tr><td><code>GET /inventory/api/export?format=json|zip</code></td><td>Download the inventory. See <a href="./import-export.html">Import and export</a></td></tr>
+          <tr><td><code>POST /inventory/api/import/preview</code>, <code>POST /inventory/api/import/apply</code></td><td>Check an import file, then apply it</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="permissions" class="mt">Permissions and groups</h2>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Permission</th><th>Allows</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-inventory:items:read</code></td><td>View items, fields and movements</td></tr>
+          <tr><td><code>kempo-inventory:items:create</code></td><td>Add items</td></tr>
+          <tr><td><code>kempo-inventory:items:update</code></td><td>Edit items</td></tr>
+          <tr><td><code>kempo-inventory:items:delete</code></td><td>Delete items (and their history)</td></tr>
+          <tr><td><code>kempo-inventory:stock:adjust</code></td><td>Add or remove stock</td></tr>
+          <tr><td><code>kempo-inventory:fields:manage</code></td><td>Create, edit and delete custom fields. Also needed to export and import</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Groups, each including everything in the one before it:</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Group</th><th>Can</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-inventory:viewer</code></td><td>View items, fields and movements</td></tr>
+          <tr><td><code>kempo-inventory:manager</code></td><td>Also create, edit and delete items and adjust stock</td></tr>
+          <tr><td><code>kempo-inventory:admin</code></td><td>Also set up the custom fields, and export and import</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Every group also includes <code>system:admin:access</code>, because kempo serves extension pages inside the admin panel and redirects anyone without it. That only opens the panel itself: its other sections stay locked behind their own permissions.</p>
+
+    <h2 id="settings" class="mt">Settings</h2>
+    <p>Under <strong>Admin &gt; Settings</strong>.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Setting</th><th>Default</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>media_provider</code></td><td><code>auto</code></td><td>Where new photos and files are uploaded: <code>auto</code>, <code>kempo-media</code> or <code>kempo-files</code>. See <a href="./access.html#photos">Photos and files</a></td></tr>
+          <tr><td><code>import_max_mb</code></td><td><code>250</code></td><td>The largest import file the admin Import accepts, in MB</td></tr>
+          <tr><td><code>public_read</code></td><td><code>false</code></td><td>Let anyone browse the inventory (never stock counts). See <a href="./access.html#who-reads">who can read</a></td></tr>
+          <tr><td><code>public_photos</code></td><td><code>true</code></td><td>Photos uploaded to kempo-files are viewable by anyone with the link</td></tr>
+          <tr><td><code>category_image_ratio</code></td><td><code>4:3</code></td><td>The aspect ratio category images are shown at</td></tr>
+          <tr><td><code>item_image_ratio</code></td><td><code>4:3</code></td><td>The aspect ratio item photos are shown at</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="notes" class="mt">Notes</h2>
+    <ul>
+      <li>Adding a column to an existing table is done in <code>update.js</code>, because kempo only creates tables that are new. The CHANGELOG lists what each version changed.</li>
+      <li>Kempo's installer ignores indexes declared in the schema, so <code>install.js</code> creates the unique SKU and field-key indexes itself.</li>
+      <li>Uninstalling drops the item, field and movement tables, <strong>including your data</strong>.</li>
+      <li>Custom values are stored in a single <code>jsonb</code> column, so adding a field never alters the schema.</li>
+      <li><code>item</code> links store the linked item's id. Deleting an item leaves any links to it in place, shown as "(deleted item)".</li>
+    </ul>
+  
+    <hr />
+    <p class="tc-muted small">kempo-inventory is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-inventory/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

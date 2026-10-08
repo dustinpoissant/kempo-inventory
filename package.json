@@ -16,7 +16,9 @@
   "main": "sdk.js",
   "scripts": {
     "test": "node --test",
-    "link:local": "npm install ../kempo --no-save"
+    "link:local": "npm install ../kempo ../kempo-server ../kempo-ui --no-save --no-legacy-peer-deps --force",
+    "docs:build": "node scripts/build-docs.js",
+    "docs:dev": "npx kempo-server --root docs --port 4050"
   },
   "kempo": {
     "public-scope": "inventory"
@@ -55,5 +57,8 @@
     "kempo-thumbs": {
       "optional": true
     }
+  },
+  "devDependencies": {
+    "highlight.js": "^11.11.1"
   }
 }

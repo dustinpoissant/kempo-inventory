@@ -1,0 +1,158 @@
+<page pageName="Building on it" title="Building on it - Kempo Inventory">
+  <content>
+    <p>An extension that adds to inventory declares the dependency, registers its fields, and cleans up after itself.</p>
+    <pre><code class="language-json">{
+  "dependencies": ["kempo-inventory"],
+  "hooks": {
+    "kempo-inventory:item:before_create": "./hooks/before-create.js",
+    "kempo-inventory:stock:adjusted": "./hooks/stock-adjusted.js"
+  }
+}</code></pre>
+    <pre><code class="language-js">// install.js
+import { registerFields } from 'kempo-inventory/sdk';
+
+export default async () => {
+  const [error] = await registerFields('kempo-inventory-reorder', [
+    { key: 'reorderLevel', label: 'Reorder level', type: 'number' },
+    { key: 'supplier', label: 'Supplier', type: 'item' },
+  ]);
+  if(error) throw new Error(error.msg);
+};
+
+// uninstall.js
+import { unregisterFields } from 'kempo-inventory/sdk';
+
+export default async () => { await unregisterFields('kempo-inventory-reorder'); };</code></pre>
+    <p><code>registerFields</code> is idempotent, so it is safe to call again on update. It refuses to take a key another owner holds, or to change an existing field's type. Kempo stops a dependency being uninstalled while something that depends on it is enabled.</p>
+
+    <h2 id="sdk" class="mt">Server SDK</h2>
+    <pre><code class="language-js">import { getItems, createItem, adjustStock, registerFields } from 'kempo-inventory/sdk';</code></pre>
+    <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>getItems({ q, filters, ids, owner, limit, offset })</code></td><td>List and search. <code>filters</code> is <code>{ fieldKey: 'exact value' }</code>, <code>ids</code> fetches exactly those items, <code>owner</code> keeps one owner's. Returns <code>{ items, total, linked }</code></td></tr>
+          <tr><td><code>getItem(id)</code>, <code>getItemBySku(sku)</code></td><td>One item</td></tr>
+          <tr><td><code>getLinked(items)</code></td><td>Resolves <code>item</code>-type values to <code>{ id, sku, name }</code></td></tr>
+          <tr><td><code>createItem({ sku, name, description, quantity, fields, userId }, { owner })</code></td><td>Create. <code>owner</code> makes it your extension's</td></tr>
+          <tr><td><code>updateItem(id, { sku, name, description, fields, userId }, { owner })</code></td><td>Update. <code>fields</code> is merged, and an empty value clears a field. SKU, name and category of an owned item need its <code>owner</code></td></tr>
+          <tr><td><code>deleteItem(id, { userId, owner })</code></td><td>Delete an item and its history (owned items need their <code>owner</code>)</td></tr>
+          <tr><td><code>adjustStock(id, { delta, reason, note, userId })</code></td><td>The way quantity changes, for anyone. Atomic, and refuses to go below zero</td></tr>
+          <tr><td><code>adjustStockMany(changes, { reason, note, ref, userId, owner })</code></td><td>Several stock changes together: every one happens or none does. See <a href="#adjust-many">below</a></td></tr>
+          <tr><td><code>unregisterItems(owner, { release })</code></td><td>Delete every item you own, or with <code>release</code> hand them back to people</td></tr>
+          <tr><td><code>getMovements({ itemId, limit, offset })</code></td><td>Stock history</td></tr>
+          <tr><td><code>getFields({ category, owner })</code>, <code>getField(key, category)</code></td><td>Read field definitions. <code>getFields()</code> is every field (each with its <code>category</code> key and <code>categoryName</code>). With <code>category</code> it is what an item in that category shows</td></tr>
+          <tr><td><code>createField(definition)</code>, <code>updateField(key, changes)</code>, <code>deleteField(key)</code></td><td>Manage user-defined fields</td></tr>
+          <tr><td><code>getCategories({ includeEmpty, owner })</code>, <code>saveCategory(name, { newName, image, description, tags }, { owner })</code>, <code>deleteCategory(name, { owner })</code></td><td>The categories, and managing them</td></tr>
+          <tr><td><code>registerCategory(owner, { name, description, tags, image }, { adopt })</code>, <code>unregisterCategories(owner)</code></td><td>Add categories owned by your extension, and remove them</td></tr>
+          <tr><td><code>getSuggestions(key, { q, limit, category })</code></td><td>Values already used for a text field, ranked for what has been typed</td></tr>
+          <tr><td><code>registerField(owner, definition)</code>, <code>registerFields(owner, definitions)</code></td><td>Add fields owned by your extension. <code>definition.category</code> scopes one to a category</td></tr>
+          <tr><td><code>unregisterFields(owner)</code></td><td>Remove every field your extension owns, and their values</td></tr>
+          <tr><td><code>FIELD_TYPES</code>, <code>EVENTS</code></td><td>The field types and the hook event names</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>An item looks like <code>{ id, sku, name, description, category, tags, quantity, fields: { ...custom values }, owner, created, updated }</code>.</p>
+
+    <h2 id="ownership" class="mt">Ownership</h2>
+    <p>Fields, categories and items can each belong to an extension. <code>owner</code> is <code>''</code> for what people manage in the admin, or the name of the extension that created it. Ownership protects what the owner builds on, and leaves the rest alone so its items stay useful in the admin.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th></th><th>Only the owner can</th><th>Anyone with the permission can still</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Field</strong></td><td>Delete it, change its key, type (within the safe conversions), requirement or options</td><td>Rename it, change its description, list and suggest settings and position</td></tr>
+          <tr><td><strong>Category</strong></td><td>Rename it (which rewrites its items), merge into or out of it, delete it</td><td>Change its image, description and tags, and put items in it</td></tr>
+          <tr><td><strong>Item</strong></td><td>Change its SKU, name and category, delete it</td><td>Edit description, tags and custom field values, and <strong>adjust stock</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A category cannot be renamed or merged by anyone but its owner while it holds items or fields another extension owns, because that would rewrite them. Sending an owned item's current SKU, name and category back unchanged is not a change, so the admin form keeps working.</p>
+    <p><strong>Ownership only comes from the server SDK.</strong> The HTTP routes never read an owner from a request, so the admin and the JSON API always act as people (<code>''</code>), and an extension cannot be impersonated from the browser. An extension calling the SDK passes its own name as <code>owner</code> to act as the owner. Leave it out and it is treated as people, so it cannot rename or delete another extension's records, or even one a person made.</p>
+    <pre><code class="language-js">// install.js
+import { registerCategory, registerField } from 'kempo-inventory/sdk';
+
+export default async () => {
+  await registerCategory('kempo-products', { name: 'Finished goods', description: 'Ready to ship' });
+  await registerField('kempo-products', { key: 'price', label: 'Price', type: 'number', category: 'Finished goods' });
+};
+
+// at runtime
+import { createItem, updateItem, getItems } from 'kempo-inventory/sdk';
+const [, item] = await createItem({ sku: 'CAR-1', name: 'Model car', category: 'Finished goods', quantity: 2 }, { owner: 'kempo-products' });
+await updateItem(item.id, { name: 'Model car v2' }, { owner: 'kempo-products' });
+const [, mine] = await getItems({ owner: 'kempo-products' });</code></pre>
+    <p><code>registerCategory</code> is idempotent. It refuses a category people already manage (409) unless <code>adopt</code> is set, which takes the record over (the items in it stay people's). An owner cannot be changed after creation. For <code>uninstall.js</code>, remove in this order:</p>
+    <pre><code class="language-js">import { unregisterItems, unregisterFields, unregisterCategories } from 'kempo-inventory/sdk';
+
+export default async () => {
+  await unregisterItems('kempo-products', { release: true }); // or omit `release` to delete them and their history
+  await unregisterFields('kempo-products');
+  await unregisterCategories('kempo-products');                // ones still in use are handed back to people, not deleted
+};</code></pre>
+    <p>To protect more than this (say, the <em>values</em> of a field you own), subscribe to the <a href="#hooks"><code>before_*</code> hooks</a>. Every payload carries <code>actor</code>, the extension making the change or <code>''</code> for a person.</p>
+
+    <h2 id="adjust-many" class="mt">Several items at once</h2>
+    <p><code>adjustStock</code> changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. <code>adjustStockMany</code> applies the whole set together:</p>
+    <pre><code class="language-js">import { adjustStockMany } from 'kempo-inventory/sdk';
+
+const [error, { items }] = await adjustStockMany(
+  [{ id: resin.id, delta: -175 }, { id: paint.id, delta: -20 }],
+  { reason: 'sale', ref: 'order-1042', owner: 'my-extension' },
+);
+// error.code 409 and error.msg "Insufficient stock of Paint (ml)": nothing changed</code></pre>
+    <p>Changes to the same item are added together, and one that nets to nothing is left out. Every item goes through the same <code>before_adjust</code> guard as <code>adjustStock</code>, and each fires <code>stock:adjusted</code> once everything is committed. <code>ref</code> is written on every stock movement (as <code>[order-1042]</code> in its note) so the change can be found, and reversed, later.</p>
+
+    <h2 id="hooks" class="mt">Hooks</h2>
+    <p>Declare these in your <code>kempo-config.json</code> <code>hooks</code>. Every payload also carries <code>actor</code>: the extension that made the change through the SDK, or <code>''</code> for a person using the admin.</p>
+    <h3>Guards</h3>
+    <p>Guards run <strong>before</strong> the work and can change it or refuse it. The payload holds a mutable object: edit it in place to change what gets saved, or <code>throw { code, msg }</code> to refuse, and the caller receives exactly that error. Everything is validated <em>after</em> guards run, so a guard cannot sneak in a value that would not otherwise be accepted. A guard that throws anything other than <code>{ code, msg }</code> is logged and reported to the user generically.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th><th>Edit / refuse</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-inventory:item:before_create</code></td><td><code>{ draft: { sku, name, description, quantity, fields }, userId }</code></td><td>edit <code>draft</code></td></tr>
+          <tr><td><code>kempo-inventory:item:before_update</code></td><td><code>{ item, changes: { sku?, name?, description?, fields? }, userId }</code></td><td>edit <code>changes</code></td></tr>
+          <tr><td><code>kempo-inventory:item:before_delete</code></td><td><code>{ item, userId }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:stock:before_adjust</code></td><td><code>{ item, draft: { delta, reason, note }, userId }</code></td><td>edit <code>draft</code></td></tr>
+          <tr><td><code>kempo-inventory:category:before_update</code></td><td><code>{ name, newName, changes: { description?, tags?, image? }, userId }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:category:before_delete</code></td><td><code>{ category, name, userId }</code> (<code>category</code> is <code>null</code> for one with no record)</td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:field:before_create</code></td><td><code>{ draft }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:field:before_update</code></td><td><code>{ field, changes }</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-inventory:field:before_delete</code></td><td><code>{ field }</code></td><td>refuse only</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Ownership is checked first, so these only run for changes that would otherwise go ahead.</p>
+    <h3>Notifications</h3>
+    <p>Notifications run <strong>after</strong> the change is committed. Nothing they do can undo it, and an error in one is logged without affecting the others.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-inventory:item:created</code></td><td><code>{ item, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:item:updated</code></td><td><code>{ item, previous, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:item:deleted</code></td><td><code>{ item, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:stock:adjusted</code></td><td><code>{ item, previousQuantity, delta, reason, note, movement, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:category:updated</code></td><td><code>{ category, previous, moved, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:category:deleted</code></td><td><code>{ category, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:field:created</code></td><td><code>{ field }</code></td></tr>
+          <tr><td><code>kempo-inventory:field:updated</code></td><td><code>{ field, previous }</code></td></tr>
+          <tr><td><code>kempo-inventory:field:deleted</code></td><td><code>{ field }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>For example, a low-stock check that reacts to every adjustment:</p>
+    <pre><code class="language-js">// hooks/stock-adjusted.js
+export default async ({ item }) => {
+  const level = item.fields.reorderLevel;
+  if(level !== undefined &amp;&amp; item.quantity &lt;= level){
+    // notify someone, create a purchase order, ...
+  }
+};</code></pre>
+    <p>Hooks run one at a time, in registration order, and are awaited, so a slow handler delays the request that triggered it.</p>
+
+    <h2 id="item-actions" class="mt">Adding to the item page</h2>
+    <p>An extension can add to the admin item page by supplying a fragment named <code>inventory-item-actions</code>, in <code>admin/inventory-item-actions.fragment.html</code> in its own package. It appears under the item form, and reads the item from <code>?id=</code> in the address. (<a href="https://github.com/dustinpoissant/kempo-products-inventory" target="_blank">kempo-products-inventory</a> uses it for "Make product from this item".)</p>
+  </content>
+</page>

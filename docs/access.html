@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photos and access - Kempo Inventory</title>
+  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Inventory
+    </a>
+    <a href="./items.html" class="m-d-n">Items</a>
+    <a href="./extending.html" class="m-d-n">Building on it</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Inventory</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./items.html">Items and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./items.html#items" class="d-b">Items</a>
+        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#tags" class="d-b">Tags</a>
+        <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
+      </div>
+      <h5><a href="./fields.html">Fields and categories</a></h5>
+      <div class="ml mb -mt">
+        <a href="./fields.html#custom-fields" class="d-b">Custom fields</a>
+        <a href="./fields.html#suggestions" class="d-b">Suggested values</a>
+        <a href="./fields.html#category-fields" class="d-b">Fields for one category</a>
+        <a href="./fields.html#categories" class="d-b">Categories</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#security" class="d-b">How a file is handled</a>
+      </div>
+      <h5><a href="./access.html">Photos and access</a></h5>
+      <div class="ml mb -mt">
+        <a href="./access.html#who-reads" class="d-b">Who can read</a>
+        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#photos" class="d-b">Photos and files</a>
+        <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
+      </div>
+      <h5><a href="./sites.html">On your own site</a></h5>
+      <div class="ml mb -mt">
+        <a href="./sites.html#browser-sdk" class="d-b">Browser SDK</a>
+        <a href="./sites.html#pages" class="d-b">Adding and editing items</a>
+        <a href="./sites.html#scanner" class="d-b">The barcode scanner</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#adjust-many" class="d-b">Several items at once</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#item-actions" class="d-b">Adding to the item page</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#notes" class="d-b">Notes</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Photos and access</h1>
+    
+    <h2 id="who-reads">Who can read the inventory</h2>
+    <p>Reading the inventory needs the <code>items:read</code> permission. Turn on the <code>public_read</code> setting (off by default) and <strong>anyone can read it, signed in or not</strong>, so it can be shared as a catalogue. Public reading covers items, categories and fields, and their photos. Writing always needs the matching permission.</p>
+
+    <h2 id="stock-counts" class="mt">Who sees stock counts</h2>
+    <p><strong>Stock counts are only for people who manage stock.</strong> A caller without <code>stock:adjust</code> or <code>items:update</code> gets items <strong>without a quantity</strong>, and no stock history. That covers a signed-out visitor, someone signed in with only <code>items:read</code>, and public reading. People who manage stock get everything.</p>
+
+    <h2 id="photos" class="mt">Photos and files</h2>
+    <p>Photos and files are optional. Three other extensions can take part. Inventory never loads any of them up front, each is detected when it is needed, and with none installed nothing else changes: the "Photos / files" field kind is simply not offered.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Extension</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a></td><td>A media library with its own image thumbnails. Files are served from <code>public/media/</code>, so anyone who knows a URL can fetch them</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-files" target="_blank">kempo-files</a></td><td>A private file library: files live outside <code>public/</code>, and every download is permission-checked</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-thumbs" target="_blank">kempo-thumbs</a></td><td>Makes thumbnails for kempo-files, including frames from video and audio. It only works on kempo-files</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Add a field of the kind "Photos / files" and every item gets an upload area. When an item has more than one photo, the first is its <strong>primary</strong> photo, the one shown on cards and lists. Each other photo has a <strong>Make primary</strong> button.</p>
+    <p>New uploads go to one library, chosen by the <code>media_provider</code> setting:</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Setting</th><th>Uploads go to</th></tr></thead>
+        <tbody>
+          <tr><td><code>auto</code> (default)</td><td>kempo-files when kempo-thumbs is also installed, otherwise kempo-media, otherwise kempo-files</td></tr>
+          <tr><td><code>kempo-media</code></td><td>kempo-media (if installed)</td></tr>
+          <tr><td><code>kempo-files</code></td><td>kempo-files (if installed)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A stored value records where its file lives, so files from both libraries keep working on the same item whichever one takes new uploads.</p>
+    <ul>
+      <li>If a library is disabled later, items keep their stored ids and everything else keeps working. Files from that library show as missing, and only <em>adding</em> a file from it is refused.</li>
+      <li>Deleting a file from its library leaves the id on the item, shown as a missing file.</li>
+      <li><strong>Permissions:</strong> the inventory groups do not grant media permissions, since those belong to the optional extensions. Uploading needs <code>media:upload</code> (kempo-media) or <code>files:upload</code> (kempo-files). With kempo-files, <em>viewing</em> a photo needs <code>files:download</code> too, so give read-only users a group that has it.</li>
+    </ul>
+
+    <h3>Who can see a photo</h3>
+    <p>kempo-files only serves a file to people with its <code>files:download</code> permission, which someone who can merely <em>read</em> the inventory does not have, so their photos would be broken images. The <code>public_photos</code> setting (on by default) uploads photos to kempo-files as <strong>public</strong>: viewable by anyone who has the link (the ids are unguessable), which includes every inventory reader. Turn it off to keep photos behind <code>files:download</code>, and then give your readers that permission. Changing the setting only affects new uploads. kempo-media files are ordinary static files and are always viewable.</p>
+
+    <h2 id="image-shape" class="mt">Photo shape and size</h2>
+    <p>A "Photos / files" field can <strong>force how photos are saved</strong>. When you create or edit one, set either or both of:</p>
+    <ul>
+      <li><strong>Force photo shape</strong>: an aspect ratio such as <code>1:1</code>, <code>4:3</code> or <code>16:9</code>. Each photo added opens in kempo-ui's image cropper, locked to that shape, so only that shape can be saved. <strong>Skip</strong> leaves a photo out.</li>
+      <li><strong>Max size (px)</strong>: photos are kept within this many pixels on a side, scaled down and never up. With only a max size and no shape, photos are scaled down with no cropper.</li>
+    </ul>
+    <p>Leave both empty and photos are uploaded as they are. The stored file is the cropped one, so the shape holds everywhere it is shown. Anything the browser cannot edit (GIF, SVG, HEIC, video) is uploaded untouched. A category's picture is always cropped to the <code>category_image_ratio</code> setting.</p>
+
+    <h3>How images are shown</h3>
+    <p>Two settings under <strong>Admin &gt; Settings</strong>, <code>category_image_ratio</code> and <code>item_image_ratio</code>, set the aspect ratio images are <em>shown</em> at, written <code>width:height</code> (<code>4:3</code> by default). Images are cropped to fit the shape and never stretched, and the originals are not changed, so changing the setting reshapes every image at once. The admin's pickers use them, and <code>GET /inventory/api/fields</code> returns them as <code>imageRatios</code> so a site can do the same.</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-inventory is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-inventory/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

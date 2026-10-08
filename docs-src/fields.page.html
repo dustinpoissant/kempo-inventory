@@ -1,0 +1,63 @@
+<page pageName="Fields and categories" title="Fields and categories - Kempo Inventory">
+  <content>
+    <h2 id="custom-fields">Custom fields</h2>
+    <p>Users in the <code>kempo-inventory:admin</code> group add fields under <strong>Inventory &gt; Fields</strong>. Each has a label, a key (made from the label, and fixed once created), a kind, and whether it is required and shown in the item list. The item list, its filters and the item form are all built from the field list, so adding a field changes all three at once.</p>
+    <div class="mb">
+      <img src="./media/admin-fields.png" alt="The Item Fields page: a table of fields with label, key, what each applies to (every item, Paint or Filament), type, whether it is required or shown in the list, its choices, and who manages it." class="full b r" />
+      <small class="d-b tc-muted">The Fields page. Brand and Supplier are for every item. Finish and Swatch belong to Paint, and Material and Diameter to Filament.</small>
+    </div>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Kind</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td>Short text</td><td>Up to 1,000 characters</td></tr>
+          <tr><td>Long text</td><td>Up to 20,000 characters</td></tr>
+          <tr><td>Number</td><td>Any number</td></tr>
+          <tr><td>Yes / no</td><td>A switch</td></tr>
+          <tr><td>Date</td><td>A date (<code>YYYY-MM-DD</code>)</td></tr>
+          <tr><td>Rating</td><td>A whole number of stars, 1 to 5, chosen with kempo-ui's star rating</td></tr>
+          <tr><td>Colour</td><td>A hex colour, such as <code>#ff8800</code>, chosen with kempo-ui's colour picker. It can be cleared</td></tr>
+          <tr><td>Choice list</td><td>One of a list you define</td></tr>
+          <tr><td>Item link</td><td>A link to another item, for things that are related in some way</td></tr>
+          <tr><td>Photos / files</td><td>Up to 20 per field. Only available when <a href="./access.html#photos">a media library</a> is installed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Every choice-list field gets a filter on the item list, and search covers custom values too. A field's kind can only be changed where nothing can be lost: a choice list can become free text, and short text can become long text. Anything else is refused, because existing values could be orphaned. Delete the field and make a new one instead. Deleting a field removes its value from every item.</p>
+
+    <h2 id="suggestions" class="mt">Suggested values</h2>
+    <p>Switch on <strong>Suggest values already used</strong> for a short-text field and, as you type, the form offers matching values from other items, and the most used ones the moment the field is focused. That keeps repeated entries such as a brand consistent: <code>vallejo</code> and <code>Vallejo</code> count as one suggestion, shown the way it is most often written. It is only a suggestion. Anything new can still be typed.</p>
+
+    <h2 id="category-fields" class="mt">Fields for one category</h2>
+    <p>A field applies either to <strong>every item</strong> (the default) or to <strong>one category</strong>. Make a paint's "Finish" (Matte, Satin, Gloss) for the Paint category and it only appears on items in Paint. Filament can have its own "Diameter" and nothing else sees it. Choose what a field <strong>Applies to</strong> when you create it, or use the gear button beside a category on the Categories page.</p>
+    <ul>
+      <li>A key is unique within its category, so two categories can each have a "finish". A category cannot reuse a key that a default field has, and the other way round, because both would be stored under the same name.</li>
+      <li>Moving an item to another category keeps the values it held for fields it no longer shows. They are hidden, not deleted, and come back if the item returns.</li>
+      <li>Renaming a category takes its fields with it. A category that still has fields cannot be deleted.</li>
+    </ul>
+    <p>A field is either <strong>custom</strong> (you manage it) or <strong>owned by an extension</strong>. For an owned field you can rename it and choose whether it shows in the list, but only the extension can delete it or change what it holds.</p>
+
+    <h2 id="categories" class="mt">Categories</h2>
+    <p>A category is a built-in, optional property of every item, like its SKU. It is free text (up to 100 characters) and the item form suggests categories already in use. Categories are not a list you maintain: they are the distinct values in use, matched ignoring case and spacing, so <code>Paint</code>, <code>paint</code> and <code>Paint </code> are one category.</p>
+    <p>What the extension adds is a small record per category with a <strong>description</strong>, <strong>tags</strong> and an <strong>image</strong>.</p>
+    <div class="mb">
+      <img src="./media/admin-categories.png" alt="The Categories page: a table of categories with how many items and fields each has, its description, tags and image, and buttons to open its fields, edit it or delete it." class="full b r" />
+      <small class="d-b tc-muted">The Categories page. The gear button opens a category's own fields.</small>
+    </div>
+    <ul>
+      <li>Create one before any item uses it, edit its description and image, rename it, or delete it.</li>
+      <li>Renaming updates every item in it. Renaming onto an existing name merges the two.</li>
+      <li>A category that items still use cannot be deleted.</li>
+      <li>The image needs a media library. See <a href="./access.html#photos">Photos and files</a>.</li>
+    </ul>
+    <pre><code class="language-js">import { getCategories, saveCategory, deleteCategory } from 'kempo-inventory/sdk';   // on the server
+import { getCategories, saveCategory, deleteCategory } from '/inventory/sdk.js';     // in the browser
+
+const [, data] = await getCategories({ includeEmpty: true });
+// { uncategorised: 2, categories: [{ name: 'Paint', key: 'paint', count: 7, description, image }] }
+
+await saveCategory('Paint', { description: 'Hobby paints' });   // only what you pass changes
+await saveCategory('Paint', { newName: 'Paints' });             // renames, and updates the items
+await deleteCategory('Paint');                                  // refused (409) while items use it</code></pre>
+  </content>
+</page>

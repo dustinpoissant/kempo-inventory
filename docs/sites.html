@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>On your own site - Kempo Inventory</title>
+  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Inventory
+    </a>
+    <a href="./items.html" class="m-d-n">Items</a>
+    <a href="./extending.html" class="m-d-n">Building on it</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Inventory</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./items.html">Items and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./items.html#items" class="d-b">Items</a>
+        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#tags" class="d-b">Tags</a>
+        <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
+      </div>
+      <h5><a href="./fields.html">Fields and categories</a></h5>
+      <div class="ml mb -mt">
+        <a href="./fields.html#custom-fields" class="d-b">Custom fields</a>
+        <a href="./fields.html#suggestions" class="d-b">Suggested values</a>
+        <a href="./fields.html#category-fields" class="d-b">Fields for one category</a>
+        <a href="./fields.html#categories" class="d-b">Categories</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#security" class="d-b">How a file is handled</a>
+      </div>
+      <h5><a href="./access.html">Photos and access</a></h5>
+      <div class="ml mb -mt">
+        <a href="./access.html#who-reads" class="d-b">Who can read</a>
+        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#photos" class="d-b">Photos and files</a>
+        <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
+      </div>
+      <h5><a href="./sites.html">On your own site</a></h5>
+      <div class="ml mb -mt">
+        <a href="./sites.html#browser-sdk" class="d-b">Browser SDK</a>
+        <a href="./sites.html#pages" class="d-b">Adding and editing items</a>
+        <a href="./sites.html#scanner" class="d-b">The barcode scanner</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#adjust-many" class="d-b">Several items at once</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#item-actions" class="d-b">Adding to the item page</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#notes" class="d-b">Notes</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>On your own site</h1>
+    
+    <p>This extension ships the data, the API, and an admin screen for managing them. A site that wants its own screens (a dashboard, a stock page, a storefront) builds them itself, and can reuse the same browser modules the admin uses.</p>
+
+    <h2 id="browser-sdk">The browser SDK</h2>
+    <p>The API client is at <code>/inventory/sdk.js</code>. Every call resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getItems, getFields, adjustStock } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/sdk.js&#x27;</span>;
+
+<span class="hljs-keyword">const</span> [error, data] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getItems</span>({ <span class="hljs-attr">q</span>: <span class="hljs-string">&#x27;paint&#x27;</span>, <span class="hljs-attr">limit</span>: <span class="hljs-number">20</span> });
+<span class="hljs-comment">// data.items, data.total, data.linked (item links), data.media (photos)</span>
+
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">adjustStock</span>(itemId, { <span class="hljs-attr">delta</span>: -<span class="hljs-number">5</span>, <span class="hljs-attr">reason</span>: <span class="hljs-string">&#x27;sold&#x27;</span>, <span class="hljs-attr">note</span>: <span class="hljs-string">&#x27;Order 1042&#x27;</span> });</code></pre>
+    <p>Whoever is calling needs the matching permission, or the <code>public_read</code> setting must be on. Stock counts only come back for people who manage stock. See <a href="./access.html#stock-counts">who sees stock counts</a>.</p>
+
+    <h2 id="dialogs" class="mt">Forms and dialogs</h2>
+    <p>The item form builds itself from the field list, so custom fields, item links and photo uploads work without any code of your own.</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { openItemDialog, openAdjustDialog } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/components/ItemDialog.js&#x27;</span>;
+
+<span class="hljs-title function_">openItemDialog</span>({ item, fields, <span class="hljs-attr">onSaved</span>: <span class="hljs-function"><span class="hljs-params">item</span> =&gt;</span> <span class="hljs-title function_">reload</span>() });                    <span class="hljs-comment">// edit an item</span>
+<span class="hljs-title function_">openItemDialog</span>({ fields, <span class="hljs-attr">defaults</span>: { <span class="hljs-attr">category</span>: <span class="hljs-string">&#x27;Paint&#x27;</span> }, onSaved });           <span class="hljs-comment">// a new item, with a category filled in</span>
+<span class="hljs-title function_">openItemDialog</span>({ fields, <span class="hljs-attr">askQuantity</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">defaults</span>: { <span class="hljs-attr">quantity</span>: <span class="hljs-number">1</span> }, onSaved });
+<span class="hljs-title function_">openAdjustDialog</span>({ item, <span class="hljs-attr">onSaved</span>: <span class="hljs-function"><span class="hljs-params">item</span> =&gt;</span> <span class="hljs-title function_">reload</span>() });                          <span class="hljs-comment">// add or remove stock</span></code></pre>
+    <p><code>fields</code> is the full list from <code>getFields()</code>. The form shows the default fields plus those of the item's category, and swaps them as the category changes. If you want your own layout, <code>fieldTemplate</code> and <code>readField</code> (from <code>ItemFields.js</code>) render and read a single field's input, and <code>displayValue</code> gives a plain-text version that is safe to put in a table cell.</p>
+
+    <h2 id="pages" class="mt">Adding and editing items</h2>
+    <p>Adding and editing are <strong>pages, not dialogs</strong>, because a dialog closes with a stray tap and takes everything entered with it. A site gets the same pages the admin uses:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { mountNewItemPage, mountEditItemPage, safeNext } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/components/NewItemPage.js&#x27;</span>;
+<span class="hljs-keyword">import</span> { showFlash } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/components/flash.js&#x27;</span>;
+
+<span class="hljs-title function_">mountNewItemPage</span>({ $container, fields, <span class="hljs-attr">defaults</span>: { <span class="hljs-attr">category</span>: <span class="hljs-string">&#x27;Paint&#x27;</span> }, <span class="hljs-attr">askQuantity</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">next</span>: <span class="hljs-string">&#x27;/category?name=Paint&#x27;</span> });
+<span class="hljs-title function_">mountEditItemPage</span>({ $container, item, fields, <span class="hljs-attr">context</span>: { linked, media, <span class="hljs-attr">ownId</span>: item.<span class="hljs-property">id</span> }, <span class="hljs-attr">next</span>: <span class="hljs-string">&#x27;/items/&#x27;</span> + item.<span class="hljs-property">id</span> });
+<span class="hljs-title function_">showFlash</span>();   <span class="hljs-comment">// on the page it goes back to: shows &quot;Added ...&quot; or &quot;Saved ...&quot; once</span></code></pre>
+    <p>The new-item page has <strong>Create item</strong>, <strong>Create and add another</strong> and <strong>Cancel</strong>. The edit page has <strong>Save</strong> and <strong>Cancel</strong>. While anything entered has not been saved, leaving the page triggers the browser's own "changes may not be saved" prompt, and Cancel asks before discarding. <code>window.hasUnsavedInventoryWork()</code> tells anything else that wants to move the page whether to hold back.</p>
+    <p><code>next</code> must be a path on the same site. <code>safeNext(value, fallback)</code> refuses anything else, which stops a link being used to send someone to another site.</p>
+
+    <h2 id="scanner" class="mt">The barcode scanner</h2>
+    <p>The scanner behind the item form's <strong>Scan</strong> button is a module you can use too:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { scanBarcode } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/components/BarcodeScanner.js&#x27;</span>;
+
+<span class="hljs-keyword">const</span> code = <span class="hljs-keyword">await</span> <span class="hljs-title function_">scanBarcode</span>();   <span class="hljs-comment">// the code&#x27;s text, or null if cancelled</span></code></pre>
+    <p>For a scanner that stays on screen and keeps going, such as a "scan page", use <code>startScanner</code> with your own <code>&lt;video&gt;</code>:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { startScanner } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/components/BarcodeScanner.js&#x27;</span>;
+
+<span class="hljs-keyword">const</span> scanner = <span class="hljs-keyword">await</span> <span class="hljs-title function_">startScanner</span>({ <span class="hljs-attr">video</span>: $video, <span class="hljs-attr">onCode</span>: <span class="hljs-function"><span class="hljs-params">code</span> =&gt;</span> <span class="hljs-title function_">lookUp</span>(code) });
+scanner.<span class="hljs-title function_">setPaused</span>(<span class="hljs-literal">true</span>);   <span class="hljs-comment">// ignore codes while a dialog is open</span>
+scanner.<span class="hljs-title function_">stop</span>();            <span class="hljs-comment">// release the camera</span></code></pre>
+    <ul>
+      <li><code>onCode</code> fires once each time a code comes into view. The same code is not reported again until it has left the frame for a moment, so holding a bottle still gives one scan, and scanning the next bottle of the same paint gives another.</li>
+      <li>It rejects if the camera can't be started. <code>cameraProblem()</code> and <code>explainCameraError()</code> turn that into a sentence you can show.</li>
+      <li>The camera is switched off as soon as a code is read or the dialog is closed.</li>
+      <li><code>openItemDialog({ defaults: { sku } })</code> opens the new-item form with a SKU already filled in, which is how a site can offer "no item has this barcode, create it?".</li>
+    </ul>
+
+    <h3>Tags in your own forms</h3>
+    <p><code>ItemFields.js</code> exports <code>tagsValue(tags)</code>, <code>suggestTags</code> and <code>readTags($tags)</code> for use with kempo-ui's tag box: <code>&lt;k-tags .value=${tagsValue(tags)} .getSuggestions=${suggestTags}&gt;</code>. <code>readTags</code> includes text typed but not yet added, so saving never loses a tag.</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-inventory is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-inventory/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

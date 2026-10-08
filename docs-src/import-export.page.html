@@ -1,0 +1,61 @@
+<page pageName="Import and export" title="Import and export - Kempo Inventory">
+  <content>
+    <p><strong>Export</strong> and <strong>Import</strong> are on the Inventory page in the admin. Both are limited to the <strong>top tier</strong>: the <code>kempo-inventory:fields:manage</code> permission, which the <code>kempo-inventory:admin</code> group holds. A manager, a viewer or a signed-out visitor gets a 403 (or 401) and does not see the buttons, because an export carries the whole inventory out, and an import can rewrite and re-stock all of it.</p>
+
+    <h2 id="export" class="mt">Export</h2>
+    <div class="mb">
+      <img src="./media/admin-export.png" alt="The Export inventory dialog with two choices: Data only (.json) and With media (.zip)." class="full b r" />
+      <small class="d-b tc-muted">The Export dialog.</small>
+    </div>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>File</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td>Data only (<code>.json</code>)</td><td>Every item (SKU, name, category, quantity, tags, description, field values) and category (description, tags), plus a list of the field definitions for reference. No photos.</td></tr>
+          <tr><td>With media (<code>.zip</code>)</td><td>The same document as <code>inventory.json</code>, plus every photo and file the items and categories use, under <code>media/</code>. Importing it brings the photos back.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="import" class="mt">Import</h2>
+    <p>Import takes either kind of file, or any zip with an <code>inventory.json</code> in the same format. It happens <strong>on the server</strong>, in two steps:</p>
+    <ol>
+      <li><strong>Check.</strong> The file is uploaded once and checked. You see how many items are new, how many already exist (matched by <strong>SKU</strong>, and categories by name), what would be ignored, and any rows that cannot be imported and why. Nothing has changed yet.</li>
+      <li><strong>Import.</strong> For the items that already exist you choose <strong>Ignore them</strong> (leave what is here exactly as it is, the default) or <strong>Update them</strong> with the file's values.</li>
+    </ol>
+    <div class="mb">
+      <img src="./media/admin-import.png" alt="The Import inventory dialog after choosing a file: 0 new items, 10 already exist, a choice between ignoring and updating them, and a list of 2 problem rows with the reason for each." class="full b r" />
+      <small class="d-b tc-muted">The check before importing. Two rows would not be imported: one has a Finish that is not one of the choices, and one has no name.</small>
+    </div>
+    <p>Things worth knowing:</p>
+    <ul>
+      <li>An empty value in the file never clears anything. A changed quantity is recorded as a stock adjustment with the reason "import", so the history stays honest.</li>
+      <li>An import never creates or changes <strong>fields</strong>. A value only comes across when a field with the same key exists and applies to the item's category. The rest are ignored and counted.</li>
+      <li>Rows are independent: one that fails (a missing name, a bad number, a required field with no value) does not stop the others.</li>
+      <li>A field linking to another item is exported as that item's SKU and resolved by SKU on import, including to items created in the same import.</li>
+      <li>Photos only come from the zip. Each distinct photo is stored once, to the library new uploads normally go to, at its original size.</li>
+    </ul>
+    <p>The <code>import_max_mb</code> setting (250 by default) is the largest file the import accepts.</p>
+
+    <h3>For scripts</h3>
+    <pre><code class="language-bash"># Download
+curl -b cookies.txt "https://example.com/inventory/api/export?format=zip" -o inventory.zip
+
+# Import: check, then apply
+curl -b cookies.txt -X POST --data-binary @inventory.zip -H "Content-Type: application/octet-stream" \
+  "https://example.com/inventory/api/import/preview?name=inventory.zip"
+curl -b cookies.txt -X POST -H "Content-Type: application/json" \
+  -d '{"importId":"...","onMatch":"update"}' https://example.com/inventory/api/import/apply</code></pre>
+    <p>The server SDK has <code>buildExport</code>, <code>importData</code>, <code>previewImport</code> and <code>applyImport</code>, and the browser SDK has <code>exportUrl</code>, <code>previewImport</code> and <code>applyImport</code>.</p>
+
+    <h2 id="security" class="mt">How an uploaded file is handled</h2>
+    <p>An import takes a file from outside, so it is handled carefully.</p>
+    <ul>
+      <li><strong>Permission first.</strong> Both import routes check <code>fields:manage</code> before they read, parse or store anything from the request.</li>
+      <li><strong>Staging.</strong> The checked upload is kept under a random 128-bit name in the system temp directory, never served, usable only by the person who uploaded it, and deleted when the import runs, when they stage another, or after 30 minutes.</li>
+      <li><strong>Zips are opened in memory only.</strong> A zip is recognised by its first bytes, not its name. Entries are looked up by the exact names the JSON asks for, never written to disk by their names, and bounded: at most 20,000 files in a zip, 200 MB for one file to inflate to (so a small "zip bomb" cannot exhaust the server), and 5,000 photos and 1 GB of photos per import.</li>
+      <li><strong>Only real media.</strong> A file is stored only if its extension is a photo, video, audio or PDF type <strong>and</strong> its first bytes really are that type: a web page renamed <code>.png</code> is refused. Everything else is skipped and listed in the result.</li>
+      <li><strong>Text is data.</strong> The text in the JSON is stored as data and escaped wherever it is shown. An import cannot run anything.</li>
+    </ul>
+  </content>
+</page>

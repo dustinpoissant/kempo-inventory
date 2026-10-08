@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fields and categories - Kempo Inventory</title>
+  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Inventory
+    </a>
+    <a href="./items.html" class="m-d-n">Items</a>
+    <a href="./extending.html" class="m-d-n">Building on it</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Inventory</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./items.html">Items and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./items.html#items" class="d-b">Items</a>
+        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#tags" class="d-b">Tags</a>
+        <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
+      </div>
+      <h5><a href="./fields.html">Fields and categories</a></h5>
+      <div class="ml mb -mt">
+        <a href="./fields.html#custom-fields" class="d-b">Custom fields</a>
+        <a href="./fields.html#suggestions" class="d-b">Suggested values</a>
+        <a href="./fields.html#category-fields" class="d-b">Fields for one category</a>
+        <a href="./fields.html#categories" class="d-b">Categories</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#security" class="d-b">How a file is handled</a>
+      </div>
+      <h5><a href="./access.html">Photos and access</a></h5>
+      <div class="ml mb -mt">
+        <a href="./access.html#who-reads" class="d-b">Who can read</a>
+        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#photos" class="d-b">Photos and files</a>
+        <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
+      </div>
+      <h5><a href="./sites.html">On your own site</a></h5>
+      <div class="ml mb -mt">
+        <a href="./sites.html#browser-sdk" class="d-b">Browser SDK</a>
+        <a href="./sites.html#pages" class="d-b">Adding and editing items</a>
+        <a href="./sites.html#scanner" class="d-b">The barcode scanner</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#adjust-many" class="d-b">Several items at once</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#item-actions" class="d-b">Adding to the item page</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#notes" class="d-b">Notes</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Fields and categories</h1>
+    
+    <h2 id="custom-fields">Custom fields</h2>
+    <p>Users in the <code>kempo-inventory:admin</code> group add fields under <strong>Inventory &gt; Fields</strong>. Each has a label, a key (made from the label, and fixed once created), a kind, and whether it is required and shown in the item list. The item list, its filters and the item form are all built from the field list, so adding a field changes all three at once.</p>
+    <div class="mb">
+      <img src="./media/admin-fields.png" alt="The Item Fields page: a table of fields with label, key, what each applies to (every item, Paint or Filament), type, whether it is required or shown in the list, its choices, and who manages it." class="full b r" />
+      <small class="d-b tc-muted">The Fields page. Brand and Supplier are for every item. Finish and Swatch belong to Paint, and Material and Diameter to Filament.</small>
+    </div>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Kind</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td>Short text</td><td>Up to 1,000 characters</td></tr>
+          <tr><td>Long text</td><td>Up to 20,000 characters</td></tr>
+          <tr><td>Number</td><td>Any number</td></tr>
+          <tr><td>Yes / no</td><td>A switch</td></tr>
+          <tr><td>Date</td><td>A date (<code>YYYY-MM-DD</code>)</td></tr>
+          <tr><td>Rating</td><td>A whole number of stars, 1 to 5, chosen with kempo-ui's star rating</td></tr>
+          <tr><td>Colour</td><td>A hex colour, such as <code>#ff8800</code>, chosen with kempo-ui's colour picker. It can be cleared</td></tr>
+          <tr><td>Choice list</td><td>One of a list you define</td></tr>
+          <tr><td>Item link</td><td>A link to another item, for things that are related in some way</td></tr>
+          <tr><td>Photos / files</td><td>Up to 20 per field. Only available when <a href="./access.html#photos">a media library</a> is installed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Every choice-list field gets a filter on the item list, and search covers custom values too. A field's kind can only be changed where nothing can be lost: a choice list can become free text, and short text can become long text. Anything else is refused, because existing values could be orphaned. Delete the field and make a new one instead. Deleting a field removes its value from every item.</p>
+
+    <h2 id="suggestions" class="mt">Suggested values</h2>
+    <p>Switch on <strong>Suggest values already used</strong> for a short-text field and, as you type, the form offers matching values from other items, and the most used ones the moment the field is focused. That keeps repeated entries such as a brand consistent: <code>vallejo</code> and <code>Vallejo</code> count as one suggestion, shown the way it is most often written. It is only a suggestion. Anything new can still be typed.</p>
+
+    <h2 id="category-fields" class="mt">Fields for one category</h2>
+    <p>A field applies either to <strong>every item</strong> (the default) or to <strong>one category</strong>. Make a paint's "Finish" (Matte, Satin, Gloss) for the Paint category and it only appears on items in Paint. Filament can have its own "Diameter" and nothing else sees it. Choose what a field <strong>Applies to</strong> when you create it, or use the gear button beside a category on the Categories page.</p>
+    <ul>
+      <li>A key is unique within its category, so two categories can each have a "finish". A category cannot reuse a key that a default field has, and the other way round, because both would be stored under the same name.</li>
+      <li>Moving an item to another category keeps the values it held for fields it no longer shows. They are hidden, not deleted, and come back if the item returns.</li>
+      <li>Renaming a category takes its fields with it. A category that still has fields cannot be deleted.</li>
+    </ul>
+    <p>A field is either <strong>custom</strong> (you manage it) or <strong>owned by an extension</strong>. For an owned field you can rename it and choose whether it shows in the list, but only the extension can delete it or change what it holds.</p>
+
+    <h2 id="categories" class="mt">Categories</h2>
+    <p>A category is a built-in, optional property of every item, like its SKU. It is free text (up to 100 characters) and the item form suggests categories already in use. Categories are not a list you maintain: they are the distinct values in use, matched ignoring case and spacing, so <code>Paint</code>, <code>paint</code> and <code>Paint </code> are one category.</p>
+    <p>What the extension adds is a small record per category with a <strong>description</strong>, <strong>tags</strong> and an <strong>image</strong>.</p>
+    <div class="mb">
+      <img src="./media/admin-categories.png" alt="The Categories page: a table of categories with how many items and fields each has, its description, tags and image, and buttons to open its fields, edit it or delete it." class="full b r" />
+      <small class="d-b tc-muted">The Categories page. The gear button opens a category's own fields.</small>
+    </div>
+    <ul>
+      <li>Create one before any item uses it, edit its description and image, rename it, or delete it.</li>
+      <li>Renaming updates every item in it. Renaming onto an existing name merges the two.</li>
+      <li>A category that items still use cannot be deleted.</li>
+      <li>The image needs a media library. See <a href="./access.html#photos">Photos and files</a>.</li>
+    </ul>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getCategories, saveCategory, deleteCategory } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;   <span class="hljs-comment">// on the server</span>
+<span class="hljs-keyword">import</span> { getCategories, saveCategory, deleteCategory } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/sdk.js&#x27;</span>;     <span class="hljs-comment">// in the browser</span>
+
+<span class="hljs-keyword">const</span> [, data] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getCategories</span>({ <span class="hljs-attr">includeEmpty</span>: <span class="hljs-literal">true</span> });
+<span class="hljs-comment">// { uncategorised: 2, categories: [{ name: &#x27;Paint&#x27;, key: &#x27;paint&#x27;, count: 7, description, image }] }</span>
+
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">saveCategory</span>(<span class="hljs-string">&#x27;Paint&#x27;</span>, { <span class="hljs-attr">description</span>: <span class="hljs-string">&#x27;Hobby paints&#x27;</span> });   <span class="hljs-comment">// only what you pass changes</span>
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">saveCategory</span>(<span class="hljs-string">&#x27;Paint&#x27;</span>, { <span class="hljs-attr">newName</span>: <span class="hljs-string">&#x27;Paints&#x27;</span> });             <span class="hljs-comment">// renames, and updates the items</span>
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">deleteCategory</span>(<span class="hljs-string">&#x27;Paint&#x27;</span>);                                  <span class="hljs-comment">// refused (409) while items use it</span></code></pre>
+  
+    <hr />
+    <p class="tc-muted small">kempo-inventory is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-inventory/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

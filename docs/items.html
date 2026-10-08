@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Items and stock - Kempo Inventory</title>
+  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Inventory
+    </a>
+    <a href="./items.html" class="m-d-n">Items</a>
+    <a href="./extending.html" class="m-d-n">Building on it</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Inventory</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./items.html">Items and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./items.html#items" class="d-b">Items</a>
+        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#tags" class="d-b">Tags</a>
+        <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
+      </div>
+      <h5><a href="./fields.html">Fields and categories</a></h5>
+      <div class="ml mb -mt">
+        <a href="./fields.html#custom-fields" class="d-b">Custom fields</a>
+        <a href="./fields.html#suggestions" class="d-b">Suggested values</a>
+        <a href="./fields.html#category-fields" class="d-b">Fields for one category</a>
+        <a href="./fields.html#categories" class="d-b">Categories</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#security" class="d-b">How a file is handled</a>
+      </div>
+      <h5><a href="./access.html">Photos and access</a></h5>
+      <div class="ml mb -mt">
+        <a href="./access.html#who-reads" class="d-b">Who can read</a>
+        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#photos" class="d-b">Photos and files</a>
+        <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
+      </div>
+      <h5><a href="./sites.html">On your own site</a></h5>
+      <div class="ml mb -mt">
+        <a href="./sites.html#browser-sdk" class="d-b">Browser SDK</a>
+        <a href="./sites.html#pages" class="d-b">Adding and editing items</a>
+        <a href="./sites.html#scanner" class="d-b">The barcode scanner</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#adjust-many" class="d-b">Several items at once</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#item-actions" class="d-b">Adding to the item page</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#notes" class="d-b">Notes</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Items and stock</h1>
+    
+    <h2 id="items">Items</h2>
+    <p>An item has a <strong>SKU</strong> (unique), a <strong>name</strong>, a <strong>quantity</strong>, a <strong>description</strong>, an optional <a href="./fields.html#categories">category</a>, optional <a href="#tags">tags</a>, and whatever <a href="./fields.html#custom-fields">custom fields</a> you have set up.</p>
+    <p>Text is stored without leading or trailing spaces, and a value of only spaces counts as empty. That keeps <code>FolkArt</code> and <code>FolkArt </code> from becoming two brands.</p>
+
+    <div class="mb">
+      <img src="./media/admin-item-form.png" alt="The Edit Item page for a red paint: name, category, tags, description, and the custom fields Brand, Supplier, Finish and Swatch, with Save and Cancel buttons." class="full b r" />
+      <small class="d-b tc-muted">An item's page. The fields below Description are custom fields: Brand and Supplier are for every item, Finish and Swatch only appear because this item is in the Paint category.</small>
+    </div>
+
+    <p><strong>Adding and editing an item are pages, not dialogs.</strong> A dialog closes with a stray tap outside it and takes everything entered with it, including photos taken with a camera. These pages keep your work, and while anything entered has not been saved, leaving the page (a link, the back button, a refresh) asks first. <strong>Create and add another</strong> starts a fresh, empty form for the next item.</p>
+    <p>An item a person manages can be edited freely. An item that another extension owns keeps its SKU, name and category fixed, and everything else, including stock, stays editable. See <a href="./extending.html#ownership">ownership</a>.</p>
+
+    <h2 id="adjusting" class="mt">Changing stock</h2>
+    <p>Stock changes only through one action, the adjust button on an item's row, and not by editing the quantity. That is what keeps the history honest. Each change records a <strong>reason</strong>, an optional <strong>note</strong>, who made it, and the quantity afterwards.</p>
+    <div class="mb">
+      <img src="./media/admin-adjust.png" alt="The Adjust stock dialog for Red paint, showing the current quantity, a change field, a reason, a note, and a history table of earlier changes with their reasons and balances." class="full b r" />
+      <small class="d-b tc-muted">Adjusting stock. The history below the form is every change ever made to the item, newest first, with the balance after each.</small>
+    </div>
+    <ul>
+      <li>Enter a negative change to take stock out. A change that would take it below zero is refused, atomically, so two people can never take the same last unit.</li>
+      <li>The reasons are <strong>received</strong>, <strong>sold</strong>, <strong>damaged</strong>, <strong>correction</strong> and <strong>other</strong>. An item's first stock is recorded as <strong>initial</strong>.</li>
+      <li>Other extensions change stock through the same action, so their changes appear in the same history. The note can carry a reference, such as an order number.</li>
+    </ul>
+    <p>The stock numbers are only for people who manage stock. See <a href="./access.html#stock-counts">who sees stock counts</a>.</p>
+
+    <h2 id="tags" class="mt">Tags</h2>
+    <p>Items and categories can be tagged with short labels such as <code>acrylic</code>, <code>red</code>, <code>matte</code>. Tags are <strong>always lower case</strong>, with spacing tidied, so <code>Water-Based</code> and <code>water-based</code> are one tag. An item has at most 30 tags, each up to 40 characters.</p>
+    <p>In the forms, type a tag and press Enter, Tab or comma to add it. Click a chip to remove it. Tags already in use are completed as you type.</p>
+    <ul>
+      <li><strong>Search</strong> matches tags: <code>q=acrylic</code>.</li>
+      <li><strong>Exact filter:</strong> <code>?tag=red</code> returns items with that tag. Repeat it as a JSON list, <code>?tag=["red","matte"]</code>, to require all of them.</li>
+      <li>An item does not inherit its category's tags. Searching a category's tag finds the category, and the category is how you reach its items.</li>
+      <li><code>GET /inventory/api/tags</code> lists every tag in use with how many things have it.</li>
+    </ul>
+
+    <h2 id="scanning" class="mt">Barcode scanning</h2>
+    <p>The item form has a <strong>Scan</strong> button beside the SKU. Point the camera at a barcode and the SKU is filled in, with a warning if another item already uses it.</p>
+    <ul>
+      <li>It reads EAN-13/8, UPC-A/E, Code 128/39/93, ITF, Codabar, QR, Data Matrix, PDF417 and Aztec.</li>
+      <li><strong>Cameras only work on HTTPS pages</strong> (and <code>localhost</code>). On a plain http address the dialog says so, rather than failing silently.</li>
+      <li>It uses the browser's own barcode detector where there is one (Chrome on Android) and otherwise a bundled copy of ZXing, so it works on iPhone and desktop too. Nothing is loaded from a CDN.</li>
+      <li>A <strong>USB or Bluetooth barcode scanner</strong> needs no camera: it types the code into the SKU box and presses Enter, and in the item form that moves on to the name, not submitting the form.</li>
+    </ul>
+    <p>The scanner is a reusable module for your own pages. See <a href="./sites.html#scanner">The barcode scanner</a>.</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-inventory is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-inventory/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

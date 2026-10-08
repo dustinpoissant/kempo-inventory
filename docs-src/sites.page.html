@@ -1,0 +1,57 @@
+<page pageName="On your own site" title="On your own site - Kempo Inventory">
+  <content>
+    <p>This extension ships the data, the API, and an admin screen for managing them. A site that wants its own screens (a dashboard, a stock page, a storefront) builds them itself, and can reuse the same browser modules the admin uses.</p>
+
+    <h2 id="browser-sdk">The browser SDK</h2>
+    <p>The API client is at <code>/inventory/sdk.js</code>. Every call resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
+    <pre><code class="language-js">import { getItems, getFields, adjustStock } from '/inventory/sdk.js';
+
+const [error, data] = await getItems({ q: 'paint', limit: 20 });
+// data.items, data.total, data.linked (item links), data.media (photos)
+
+await adjustStock(itemId, { delta: -5, reason: 'sold', note: 'Order 1042' });</code></pre>
+    <p>Whoever is calling needs the matching permission, or the <code>public_read</code> setting must be on. Stock counts only come back for people who manage stock. See <a href="./access.html#stock-counts">who sees stock counts</a>.</p>
+
+    <h2 id="dialogs" class="mt">Forms and dialogs</h2>
+    <p>The item form builds itself from the field list, so custom fields, item links and photo uploads work without any code of your own.</p>
+    <pre><code class="language-js">import { openItemDialog, openAdjustDialog } from '/inventory/components/ItemDialog.js';
+
+openItemDialog({ item, fields, onSaved: item => reload() });                    // edit an item
+openItemDialog({ fields, defaults: { category: 'Paint' }, onSaved });           // a new item, with a category filled in
+openItemDialog({ fields, askQuantity: false, defaults: { quantity: 1 }, onSaved });
+openAdjustDialog({ item, onSaved: item => reload() });                          // add or remove stock</code></pre>
+    <p><code>fields</code> is the full list from <code>getFields()</code>. The form shows the default fields plus those of the item's category, and swaps them as the category changes. If you want your own layout, <code>fieldTemplate</code> and <code>readField</code> (from <code>ItemFields.js</code>) render and read a single field's input, and <code>displayValue</code> gives a plain-text version that is safe to put in a table cell.</p>
+
+    <h2 id="pages" class="mt">Adding and editing items</h2>
+    <p>Adding and editing are <strong>pages, not dialogs</strong>, because a dialog closes with a stray tap and takes everything entered with it. A site gets the same pages the admin uses:</p>
+    <pre><code class="language-js">import { mountNewItemPage, mountEditItemPage, safeNext } from '/inventory/components/NewItemPage.js';
+import { showFlash } from '/inventory/components/flash.js';
+
+mountNewItemPage({ $container, fields, defaults: { category: 'Paint' }, askQuantity: false, next: '/category?name=Paint' });
+mountEditItemPage({ $container, item, fields, context: { linked, media, ownId: item.id }, next: '/items/' + item.id });
+showFlash();   // on the page it goes back to: shows "Added ..." or "Saved ..." once</code></pre>
+    <p>The new-item page has <strong>Create item</strong>, <strong>Create and add another</strong> and <strong>Cancel</strong>. The edit page has <strong>Save</strong> and <strong>Cancel</strong>. While anything entered has not been saved, leaving the page triggers the browser's own "changes may not be saved" prompt, and Cancel asks before discarding. <code>window.hasUnsavedInventoryWork()</code> tells anything else that wants to move the page whether to hold back.</p>
+    <p><code>next</code> must be a path on the same site. <code>safeNext(value, fallback)</code> refuses anything else, which stops a link being used to send someone to another site.</p>
+
+    <h2 id="scanner" class="mt">The barcode scanner</h2>
+    <p>The scanner behind the item form's <strong>Scan</strong> button is a module you can use too:</p>
+    <pre><code class="language-js">import { scanBarcode } from '/inventory/components/BarcodeScanner.js';
+
+const code = await scanBarcode();   // the code's text, or null if cancelled</code></pre>
+    <p>For a scanner that stays on screen and keeps going, such as a "scan page", use <code>startScanner</code> with your own <code>&lt;video&gt;</code>:</p>
+    <pre><code class="language-js">import { startScanner } from '/inventory/components/BarcodeScanner.js';
+
+const scanner = await startScanner({ video: $video, onCode: code => lookUp(code) });
+scanner.setPaused(true);   // ignore codes while a dialog is open
+scanner.stop();            // release the camera</code></pre>
+    <ul>
+      <li><code>onCode</code> fires once each time a code comes into view. The same code is not reported again until it has left the frame for a moment, so holding a bottle still gives one scan, and scanning the next bottle of the same paint gives another.</li>
+      <li>It rejects if the camera can't be started. <code>cameraProblem()</code> and <code>explainCameraError()</code> turn that into a sentence you can show.</li>
+      <li>The camera is switched off as soon as a code is read or the dialog is closed.</li>
+      <li><code>openItemDialog({ defaults: { sku } })</code> opens the new-item form with a SKU already filled in, which is how a site can offer "no item has this barcode, create it?".</li>
+    </ul>
+
+    <h3>Tags in your own forms</h3>
+    <p><code>ItemFields.js</code> exports <code>tagsValue(tags)</code>, <code>suggestTags</code> and <code>readTags($tags)</code> for use with kempo-ui's tag box: <code>&lt;k-tags .value=${tagsValue(tags)} .getSuggestions=${suggestTags}&gt;</code>. <code>readTags</code> includes text typed but not yet added, so saving never loses a tag.</p>
+  </content>
+</page>

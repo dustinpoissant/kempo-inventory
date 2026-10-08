@@ -448,3 +448,7 @@ All routes require a session holding the permission above.
 - Uninstalling drops the item, field and movement tables, including your data.
 - Custom values are stored in a single `jsonb` column, so adding a field never alters the schema.
 - `item` links store the linked item's id. Deleting an item leaves any links to it in place, shown as "(deleted item)".
+
+## Development
+
+The documentation site is written in `docs-src/` and built into `docs/` (served by GitHub Pages from the `docs` folder). Edit `docs-src/`, never `docs/`, then run `npm run docs:build`; `npm run docs:dev` serves it on port 4050. `tests/docs.test.js` fails if a link, anchor or image is broken or `docs/` is out of date.

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kempo Inventory</title>
+  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Inventory
+    </a>
+    <a href="./items.html" class="m-d-n">Items</a>
+    <a href="./extending.html" class="m-d-n">Building on it</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Inventory</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./items.html">Items and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./items.html#items" class="d-b">Items</a>
+        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#tags" class="d-b">Tags</a>
+        <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
+      </div>
+      <h5><a href="./fields.html">Fields and categories</a></h5>
+      <div class="ml mb -mt">
+        <a href="./fields.html#custom-fields" class="d-b">Custom fields</a>
+        <a href="./fields.html#suggestions" class="d-b">Suggested values</a>
+        <a href="./fields.html#category-fields" class="d-b">Fields for one category</a>
+        <a href="./fields.html#categories" class="d-b">Categories</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#security" class="d-b">How a file is handled</a>
+      </div>
+      <h5><a href="./access.html">Photos and access</a></h5>
+      <div class="ml mb -mt">
+        <a href="./access.html#who-reads" class="d-b">Who can read</a>
+        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#photos" class="d-b">Photos and files</a>
+        <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
+      </div>
+      <h5><a href="./sites.html">On your own site</a></h5>
+      <div class="ml mb -mt">
+        <a href="./sites.html#browser-sdk" class="d-b">Browser SDK</a>
+        <a href="./sites.html#pages" class="d-b">Adding and editing items</a>
+        <a href="./sites.html#scanner" class="d-b">The barcode scanner</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#adjust-many" class="d-b">Several items at once</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#item-actions" class="d-b">Adding to the item page</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#notes" class="d-b">Notes</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-inventory" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Kempo Inventory</h1>
+    
+    <div class="ta-center mb">
+      <p>
+        <a href="https://github.com/dustinpoissant/kempo-inventory" class="btn primary mr" target="_blank">GitHub</a>
+        <a href="https://www.npmjs.com/package/kempo-inventory" class="btn" target="_blank">npm</a>
+      </p>
+      <p class="large">The core of an inventory system for <a href="https://github.com/dustinpoissant/kempo" target="_blank">kempo</a>. Track what you have, where it went, and what it is made of.</p>
+    </div>
+
+    <p>It is deliberately small. Every item has just a <strong>SKU</strong>, a <strong>name</strong>, a <strong>quantity</strong> and a <strong>description</strong>. Everything else is a custom field that a person adds in the admin, or that another extension registers, so the same base can model parts, books, rentals, supplies, paint, filament, or anything else you keep on a shelf.</p>
+
+    <div class="mb">
+      <img src="./media/admin-items.png" alt="The Inventory admin page: a searchable table of items with SKU, name, category, quantity, tags and custom field columns, and buttons to import, export, manage categories and fields, and add an item." class="full b r" />
+      <small class="d-b tc-muted">The Inventory page in the admin. The columns after Tags are custom fields, and they come from the field list, so they change when you add one.</small>
+    </div>
+
+    <h2 id="what-it-does" class="mt">What it does</h2>
+    <ul>
+      <li><strong>One audited way to change stock.</strong> Every change has a reason and a note and goes into a movement history, so you can always see how a quantity got to where it is. Stock can never go below zero.</li>
+      <li><strong>Custom fields you set up in the admin.</strong> Text, numbers, dates, colours, ratings, choice lists, links to other items, and photos. A field can belong to every item or to one category only.</li>
+      <li><strong>Categories and tags.</strong> Group items, give a category a picture and description, and label items so they are easy to find.</li>
+      <li><strong>Import and export.</strong> Move the whole inventory in or out as a file, with a check before anything is changed.</li>
+      <li><strong>Barcode scanning.</strong> Scan a barcode with a phone camera, or a USB or Bluetooth scanner, to fill in a SKU.</li>
+      <li><strong>Built to be built on.</strong> A server SDK and hooks let other extensions add to it, and fields, categories and items can be owned by an extension.</li>
+    </ul>
+
+    <h2 class="mt">Where to start</h2>
+    <div class="d-g mb" style="grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); grid-auto-rows: auto auto; gap: var(--spacer);">
+      <a href="./items.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Items and stock</h3>
+        <p class="tc-muted">Adding items, changing stock, tags and barcodes.</p>
+      </a>
+      <a href="./fields.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Fields and categories</h3>
+        <p class="tc-muted">Describe your items with fields, and group them in categories.</p>
+      </a>
+      <a href="./import-export.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Import and export</h3>
+        <p class="tc-muted">Move the whole inventory in or out as a file.</p>
+      </a>
+      <a href="./access.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Photos and access</h3>
+        <p class="tc-muted">Photos and files, who can read the inventory, and who sees stock counts.</p>
+      </a>
+      <a href="./sites.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">On your own site</h3>
+        <p class="tc-muted">Reuse the forms, dialogs and scanner in your own pages.</p>
+      </a>
+      <a href="./extending.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Building on it</h3>
+        <p class="tc-muted">The server SDK, hooks, ownership, and changing several items at once.</p>
+      </a>
+    </div>
+
+    <h2 id="quick-start" class="mt">Quick start</h2>
+    <h3>1. Install the package</h3>
+    <p>In your kempo site:</p>
+    <pre><code class="hljs bash">npm install kempo-inventory</code></pre>
+    <h3 class="mt">2. Install the extension</h3>
+    <p>Open <strong>Admin &gt; Extensions</strong> and install <strong>kempo-inventory</strong>. An <strong>Inventory</strong> entry appears in the admin menu.</p>
+    <h3 class="mt">3. Add some fields</h3>
+    <p>Under <strong>Inventory &gt; Fields</strong>, add what you want to record about your items: a brand, a supplier, a colour. <a href="./fields.html">Fields and categories</a> explains the kinds and how a field can belong to just one category.</p>
+    <h3 class="mt">4. Add items</h3>
+    <p>Choose <strong>New Item</strong>, give it a SKU and a name, and set its starting quantity. From then on, change its stock with the adjust button on its row, never by editing the number, so the history stays honest.</p>
+
+    <h2 id="works-with" class="mt">Works with</h2>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Extension</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a></td><td>Optional. A media library, so items and categories can have photos.</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-files" target="_blank">kempo-files</a></td><td>Optional. A private file library, as an alternative home for photos and files.</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-thumbs" target="_blank">kempo-thumbs</a></td><td>Optional. Makes thumbnails for kempo-files.</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-products" target="_blank">kempo-products</a></td><td>A product catalog. It never touches inventory directly: see the connector below.</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-products-inventory" target="_blank">kempo-products-inventory</a></td><td>Connects the two: selling a product takes the materials it is made from out of inventory.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  
+    <hr />
+    <p class="tc-muted small">kempo-inventory is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-inventory/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>
