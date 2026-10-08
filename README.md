@@ -451,4 +451,4 @@ All routes require a session holding the permission above.
 
 ## Development
 
-The documentation site is written in `docs-src/` and built into `docs/` (served by GitHub Pages from the `docs` folder). Edit `docs-src/`, never `docs/`, then run `npm run docs:build`; `npm run docs:dev` serves it on port 4050. `tests/docs.test.js` fails if a link, anchor or image is broken or `docs/` is out of date.
+The documentation site is written in `docs-src/` and built into `docs/` (served by GitHub Pages from the `docs` folder). Edit `docs-src/`, never `docs/`, then run `npm run docs:build`; `npm run docs:dev` serves it on port 4050.
