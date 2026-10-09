@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -137,7 +144,8 @@
 
     <h2 id="export" class="mt">Export</h2>
     <div class="mb">
-      <img src="./media/admin-export.png" alt="The Export inventory dialog with two choices: Data only (.json) and With media (.zip)." class="full b r" />
+      <img src="./media/admin-export-light.png" alt="The Export inventory dialog with two choices: Data only (.json) and With media (.zip)." class="img-light full b r" />
+      <img src="./media/admin-export-dark.png" alt="The Export inventory dialog with two choices: Data only (.json) and With media (.zip)." class="img-dark full b r" />
       <small class="d-b tc-muted">The Export dialog.</small>
     </div>
     <div class="table-wrapper mb">
@@ -157,7 +165,8 @@
       <li><strong>Import.</strong> For the items that already exist you choose <strong>Ignore them</strong> (leave what is here exactly as it is, the default) or <strong>Update them</strong> with the file's values.</li>
     </ol>
     <div class="mb">
-      <img src="./media/admin-import.png" alt="The Import inventory dialog after choosing a file: 0 new items, 10 already exist, a choice between ignoring and updating them, and a list of 2 problem rows with the reason for each." class="full b r" />
+      <img src="./media/admin-import-light.png" alt="The Import inventory dialog after choosing a file: 0 new items, 10 already exist, a choice between ignoring and updating them, and a list of 2 problem rows with the reason for each." class="img-light full b r" />
+      <img src="./media/admin-import-dark.png" alt="The Import inventory dialog after choosing a file: 0 new items, 10 already exist, a choice between ignoring and updating them, and a list of 2 problem rows with the reason for each." class="img-dark full b r" />
       <small class="d-b tc-muted">The check before importing. Two rows would not be imported: one has a Finish that is not one of the choices, and one has no name.</small>
     </div>
     <p>Things worth knowing:</p>

@@ -451,4 +451,4 @@ All routes require a session holding the permission above.
 
 ## Development
 
-The documentation site is written in `docs-src/` and built into `docs/` (served by GitHub Pages from the `docs` folder). Edit `docs-src/`, never `docs/`, then run `npm run docs:build`; `npm run docs:dev` serves it on port 4050.
+The documentation site is written in `docs-src/` and built into `docs/` (served by GitHub Pages from the `docs` folder). Edit `docs-src/`, never `docs/`, then run `npm run docs:build`; `npm run docs:dev` serves it on port 4050. Screenshots come in pairs: write `<img src="./media/name.png" ...>` in a page, and put `name-light.png` and `name-dark.png` in `docs-src/media`. The build turns the tag into both images and the site shows the one matching the visitor's theme.

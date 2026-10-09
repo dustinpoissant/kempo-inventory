@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, writeFile, mkdir, copyFile, stat } from 'fs/promises';
+import { readdir, readFile, writeFile, mkdir, copyFile, stat, rm } from 'fs/promises';
 import { join, extname, relative } from 'path';
 import { pathToFileURL } from 'url';
 import hljs from 'highlight.js';
@@ -11,7 +11,10 @@ import { renderDir } from 'kempo-server/templating';
     1. every *.page.html in docs-src is rendered into docs/ through the template and fragments
     2. code samples are highlighted: write <pre><code class="language-js"> with < and & escaped, and
        it becomes highlighted markup here, so the page needs no script to colour it
-    3. docs-src/media is copied across
+    3. screenshots are written once as <img src="./media/name.png">; the build turns each into a light
+       and a dark <img> (media/name-light.png and name-dark.png), and the site shows the one that
+       matches the theme in use
+    4. docs-src/media is copied across
 
   Edit docs-src, never docs: the next build replaces it. `npm run docs:build` runs this; the tests
   call buildDocs into a temporary folder to check the committed docs/ is what the sources produce.
@@ -30,6 +33,9 @@ export const highlight = html => html.replace(/<pre><code class="language-([a-z]
   return `<pre><code class="hljs ${language}">${result}</code></pre>`;
 });
 
+/* Every screenshot comes as a light and a dark file; the head fragment hides the one that is not in use. */
+export const themeImages = html => html.replace(/<img src="\.\/media\/([a-z0-9-]+)\.png"([^>]*?)\/>/g, (match, name, rest) => ['light', 'dark'].map(theme => `<img src="./media/${name}-${theme}.png"${rest.replace('class="', `class="img-${theme} `)}/>`).join('\n      '));
+
 const walk = async directory => {
   const files = [];
   for(const entry of await readdir(directory, { withFileTypes: true })){
@@ -45,13 +51,14 @@ export const buildDocs = async ({ source = './docs-src', output = './docs' } = {
   let highlighted = 0;
   for(const file of (await walk(output)).filter(path => extname(path) === '.html')){
     const before = await readFile(file, 'utf8');
-    const after = highlight(before);
+    const after = themeImages(highlight(before));
     if(after !== before){
       await writeFile(file, after, 'utf8');
       highlighted += 1;
     }
   }
 
+  await rm(join(output, 'media'), { recursive: true, force: true });
   const media = join(source, 'media');
   const files = await stat(media).then(() => true).catch(() => false) ? await walk(media) : [];
   for(const file of files){

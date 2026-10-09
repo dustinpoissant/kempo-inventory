@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -136,7 +143,8 @@
     <h2 id="custom-fields">Custom fields</h2>
     <p>Users in the <code>kempo-inventory:admin</code> group add fields under <strong>Inventory &gt; Fields</strong>. Each has a label, a key (made from the label, and fixed once created), a kind, and whether it is required and shown in the item list. The item list, its filters and the item form are all built from the field list, so adding a field changes all three at once.</p>
     <div class="mb">
-      <img src="./media/admin-fields.png" alt="The Item Fields page: a table of fields with label, key, what each applies to (every item, Paint or Filament), type, whether it is required or shown in the list, its choices, and who manages it." class="full b r" />
+      <img src="./media/admin-fields-light.png" alt="The Item Fields page: a table of fields with label, key, what each applies to (every item, Paint or Filament), type, whether it is required or shown in the list, its choices, and who manages it." class="img-light full b r" />
+      <img src="./media/admin-fields-dark.png" alt="The Item Fields page: a table of fields with label, key, what each applies to (every item, Paint or Filament), type, whether it is required or shown in the list, its choices, and who manages it." class="img-dark full b r" />
       <small class="d-b tc-muted">The Fields page. Brand and Supplier are for every item. Finish and Swatch belong to Paint, and Material and Diameter to Filament.</small>
     </div>
     <div class="table-wrapper mb">
@@ -174,7 +182,8 @@
     <p>A category is a built-in, optional property of every item, like its SKU. It is free text (up to 100 characters) and the item form suggests categories already in use. Categories are not a list you maintain: they are the distinct values in use, matched ignoring case and spacing, so <code>Paint</code>, <code>paint</code> and <code>Paint </code> are one category.</p>
     <p>What the extension adds is a small record per category with a <strong>description</strong>, <strong>tags</strong> and an <strong>image</strong>.</p>
     <div class="mb">
-      <img src="./media/admin-categories.png" alt="The Categories page: a table of categories with how many items and fields each has, its description, tags and image, and buttons to open its fields, edit it or delete it." class="full b r" />
+      <img src="./media/admin-categories-light.png" alt="The Categories page: a table of categories with how many items and fields each has, its description, tags and image, and buttons to open its fields, edit it or delete it." class="img-light full b r" />
+      <img src="./media/admin-categories-dark.png" alt="The Categories page: a table of categories with how many items and fields each has, its description, tags and image, and buttons to open its fields, edit it or delete it." class="img-dark full b r" />
       <small class="d-b tc-muted">The Categories page. The gear button opens a category's own fields.</small>
     </div>
     <ul>

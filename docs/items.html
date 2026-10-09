@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -138,7 +145,8 @@
     <p>Text is stored without leading or trailing spaces, and a value of only spaces counts as empty. That keeps <code>FolkArt</code> and <code>FolkArt </code> from becoming two brands.</p>
 
     <div class="mb">
-      <img src="./media/admin-item-form.png" alt="The Edit Item page for a red paint: name, category, tags, description, and the custom fields Brand, Supplier, Finish and Swatch, with Save and Cancel buttons." class="full b r" />
+      <img src="./media/admin-item-form-light.png" alt="The Edit Item page for a red paint: name, category, tags, description, and the custom fields Brand, Supplier, Finish and Swatch, with Save and Cancel buttons." class="img-light full b r" />
+      <img src="./media/admin-item-form-dark.png" alt="The Edit Item page for a red paint: name, category, tags, description, and the custom fields Brand, Supplier, Finish and Swatch, with Save and Cancel buttons." class="img-dark full b r" />
       <small class="d-b tc-muted">An item's page. The fields below Description are custom fields: Brand and Supplier are for every item, Finish and Swatch only appear because this item is in the Paint category.</small>
     </div>
 
@@ -148,7 +156,8 @@
     <h2 id="adjusting" class="mt">Changing stock</h2>
     <p>Stock changes only through one action, the adjust button on an item's row, and not by editing the quantity. That is what keeps the history honest. Each change records a <strong>reason</strong>, an optional <strong>note</strong>, who made it, and the quantity afterwards.</p>
     <div class="mb">
-      <img src="./media/admin-adjust.png" alt="The Adjust stock dialog for Red paint, showing the current quantity, a change field, a reason, a note, and a history table of earlier changes with their reasons and balances." class="full b r" />
+      <img src="./media/admin-adjust-light.png" alt="The Adjust stock dialog for Red paint, showing the current quantity, a change field, a reason, a note, and a history table of earlier changes with their reasons and balances." class="img-light full b r" />
+      <img src="./media/admin-adjust-dark.png" alt="The Adjust stock dialog for Red paint, showing the current quantity, a change field, a reason, a note, and a history table of earlier changes with their reasons and balances." class="img-dark full b r" />
       <small class="d-b tc-muted">Adjusting stock. The history below the form is every change ever made to the item, newest first, with the balance after each.</small>
     </div>
     <ul>

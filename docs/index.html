@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -144,7 +151,8 @@
     <p>It is deliberately small. Every item has just a <strong>SKU</strong>, a <strong>name</strong>, a <strong>quantity</strong> and a <strong>description</strong>. Everything else is a custom field that a person adds in the admin, or that another extension registers, so the same base can model parts, books, rentals, supplies, paint, filament, or anything else you keep on a shelf.</p>
 
     <div class="mb">
-      <img src="./media/admin-items.png" alt="The Inventory admin page: a searchable table of items with SKU, name, category, quantity, tags and custom field columns, and buttons to import, export, manage categories and fields, and add an item." class="full b r" />
+      <img src="./media/admin-items-light.png" alt="The Inventory admin page: a searchable table of items with SKU, name, category, quantity, tags and custom field columns, and buttons to import, export, manage categories and fields, and add an item." class="img-light full b r" />
+      <img src="./media/admin-items-dark.png" alt="The Inventory admin page: a searchable table of items with SKU, name, category, quantity, tags and custom field columns, and buttons to import, export, manage categories and fields, and add an item." class="img-dark full b r" />
       <small class="d-b tc-muted">The Inventory page in the admin. The columns after Tags are custom fields, and they come from the field list, so they change when you add one.</small>
     </div>
 
