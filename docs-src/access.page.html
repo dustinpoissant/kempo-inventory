@@ -12,25 +12,15 @@
       <table>
         <thead><tr><th>Extension</th><th>Role</th></tr></thead>
         <tbody>
-          <tr><td><a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a></td><td>A media library with its own image thumbnails. Files are served from <code>public/media/</code>, so anyone who knows a URL can fetch them</td></tr>
-          <tr><td><a href="https://github.com/dustinpoissant/kempo-files" target="_blank">kempo-files</a></td><td>A private file library: files live outside <code>public/</code>, and every download is permission-checked</td></tr>
-          <tr><td><a href="https://github.com/dustinpoissant/kempo-thumbs" target="_blank">kempo-thumbs</a></td><td>Makes thumbnails for kempo-files, including frames from video and audio. It only works on kempo-files</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a></td><td>A media library: a kempo-files file plus kind, dimensions and alt text, with thumbnails from kempo-thumbs. It requires the other two, so installing it brings all three</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-files" target="_blank">kempo-files</a></td><td>A file library: files live outside <code>public/</code>, and every download is permission-checked unless the file is marked public</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-thumbs" target="_blank">kempo-thumbs</a></td><td>Makes thumbnails for kempo-files, including frames from video and audio</td></tr>
         </tbody>
       </table>
     </div>
     <p>Add a field of the kind "Photos / files" and every item gets an upload area. When an item has more than one photo, the first is its <strong>primary</strong> photo, the one shown on cards and lists. Each other photo has a <strong>Make primary</strong> button.</p>
-    <p>New uploads go to one library, chosen by the <code>media_provider</code> setting:</p>
-    <div class="table-wrapper mb">
-      <table>
-        <thead><tr><th>Setting</th><th>Uploads go to</th></tr></thead>
-        <tbody>
-          <tr><td><code>auto</code> (default)</td><td>kempo-files when kempo-thumbs is also installed, otherwise kempo-media, otherwise kempo-files</td></tr>
-          <tr><td><code>kempo-media</code></td><td>kempo-media (if installed)</td></tr>
-          <tr><td><code>kempo-files</code></td><td>kempo-files (if installed)</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p>A stored value records where its file lives, so files from both libraries keep working on the same item whichever one takes new uploads.</p>
+    <p>New uploads go to kempo-media when it is installed (it is kempo-files with thumbnails, so one upload gives a stored file and its thumbnail), and to kempo-files directly on a site that has only that. There is no setting to choose: the old <code>media_provider</code> setting was retired, and the update removes it.</p>
+    <p>A stored value records where its file lives (a bare id is a kempo-media asset, <code>files:&lt;id&gt;</code> a kempo-files file), so values written earlier, or by a site with only kempo-files, keep working on the same item as newer ones.</p>
     <ul>
       <li>If a library is disabled later, items keep their stored ids and everything else keeps working. Files from that library show as missing, and only <em>adding</em> a file from it is refused.</li>
       <li>Deleting a file from its library leaves the id on the item, shown as a missing file.</li>
@@ -38,7 +28,7 @@
     </ul>
 
     <h3>Who can see a photo</h3>
-    <p>kempo-files only serves a file to people with its <code>files:download</code> permission, which someone who can merely <em>read</em> the inventory does not have, so their photos would be broken images. The <code>public_photos</code> setting (on by default) uploads photos to kempo-files as <strong>public</strong>: viewable by anyone who has the link (the ids are unguessable), which includes every inventory reader. Turn it off to keep photos behind <code>files:download</code>, and then give your readers that permission. Changing the setting only affects new uploads. kempo-media files are ordinary static files and are always viewable.</p>
+    <p>kempo-files only serves a file to people with its <code>files:download</code> permission, which someone who can merely <em>read</em> the inventory does not have, so their photos would be broken images. The <code>public_photos</code> setting (on by default) uploads photos as <strong>public</strong>, whether they go to kempo-media or kempo-files: viewable by anyone who has the link (the ids are unguessable), which includes every inventory reader. Turn it off to keep photos behind <code>files:download</code>, and then give your readers that permission. Changing the setting only affects new uploads.</p>
 
     <h2 id="image-shape" class="mt">Photo shape and size</h2>
     <p>A "Photos / files" field can <strong>force how photos are saved</strong>. When you create or edit one, set either or both of:</p>

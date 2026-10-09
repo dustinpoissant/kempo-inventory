@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
-import { getSetting, setSetting } from 'kempo/server/sdk.js';
+import { getSetting, setSetting, deleteSetting } from 'kempo/server/sdk.js';
 
 /*
   kempo creates tables that are new in an update but never alters ones that already exist, so a
@@ -8,6 +8,9 @@ import { getSetting, setSetting } from 'kempo/server/sdk.js';
   this on a database that already has the change is harmless.
 */
 export default async () => {
+  // Next: media_provider is retired. kempo-media sits on kempo-files, so new uploads go through it whenever it is installed.
+  await deleteSetting('kempo-inventory', 'media_provider');
+
   // 0.15: items and categories can be owned by an extension ('' = managed by people, as before)
   await db.execute(sql`ALTER TABLE "kempoInventoryItem" ADD COLUMN IF NOT EXISTS "owner" text NOT NULL DEFAULT ''`);
   await db.execute(sql`ALTER TABLE "kempoInventoryCategory" ADD COLUMN IF NOT EXISTS "owner" text NOT NULL DEFAULT ''`);

@@ -42,7 +42,7 @@ const MEDIA_ACCEPT = 'image/*,video/*,audio/*,.glb,.gltf,.obj,.fbx,.zip';
 
 /*
   Which library new uploads go to ('media', 'files' or null), decided by the server from what is
-  installed and the media_provider setting. Asked once per page.
+  installed: kempo-media when it is there, otherwise kempo-files. Asked once per page.
 */
 let infoPromise = null;
 const fieldInfo = () => infoPromise ??= getFields().then(([error, data]) => {
@@ -50,7 +50,7 @@ const fieldInfo = () => infoPromise ??= getFields().then(([error, data]) => {
   return error ? null : data;
 });
 const uploadProvider = () => fieldInfo().then(data => data?.capabilities.upload ?? null);
-/* Whether files uploaded to kempo-files are made public (the public_photos setting). */
+/* Whether new uploads are made public (the public_photos setting). */
 const uploadsArePublic = () => fieldInfo().then(data => data?.capabilities.publicFiles !== false);
 
 /*
@@ -66,7 +66,7 @@ export const imageRatios = () => fieldInfo().then(data => data?.imageRatios ?? {
 */
 const uploadToMedia = async file => {
   const { uploadMedia } = await import('/kempo-media/sdk.js');
-  const [error, data] = await uploadMedia(file);
+  const [error, data] = await uploadMedia(file, { public: await uploadsArePublic() });
   if(error) return [error, null];
   const asset = data.asset;
   return [null, { id: asset.id, asset: {

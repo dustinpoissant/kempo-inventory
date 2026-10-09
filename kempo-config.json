@@ -64,12 +64,6 @@
   ],
   "settings": [
     {
-      "name": "media_provider",
-      "value": "auto",
-      "type": "string",
-      "description": "Where new photos and files are uploaded: auto, kempo-media or kempo-files. Auto uses kempo-files when kempo-thumbs is installed to thumbnail it, otherwise kempo-media."
-    },
-    {
       "name": "import_max_mb",
       "value": 250,
       "type": "number",
@@ -85,7 +79,7 @@
       "name": "public_photos",
       "value": true,
       "type": "boolean",
-      "description": "Photos uploaded to kempo-files are viewable by anyone with the link, so every person who can read the inventory sees them (kempo-files otherwise needs each of them to have its files:download permission). Turn off to keep photos behind that permission."
+      "description": "New photos are viewable by anyone with the link, so every person who can read the inventory sees them (a private file otherwise needs each of them to have the files:download permission). Turn off to keep photos behind that permission."
     },
     {
       "name": "category_image_ratio",

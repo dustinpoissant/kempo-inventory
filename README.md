@@ -130,7 +130,7 @@ Reading the inventory needs the `items:read` permission. Turn on the `public_rea
 
 ## Who can see photos
 
-kempo-files only serves a file to people with its `files:download` permission, which someone who can merely *read* the inventory does not have, so their photos would be broken images. The `public_photos` setting (on by default) uploads photos to kempo-files as **public**: viewable by anyone who has the link (ids are unguessable), which includes every inventory reader. Turn it off to keep photos behind `files:download`; then give your readers that permission. Changing the setting only affects new uploads. `update.js` also marks the photos items and categories already use (and their thumbnails) public when the setting is on. kempo-media files are ordinary static files and are always viewable.
+kempo-files only serves a file to people with its `files:download` permission, which someone who can merely *read* the inventory does not have, so their photos would be broken images. The `public_photos` setting (on by default) uploads photos as **public**, whether they go to kempo-media or kempo-files: viewable by anyone who has the link (ids are unguessable), which includes every inventory reader. Turn it off to keep photos behind `files:download`; then give your readers that permission. Changing the setting only affects new uploads. `update.js` also marks the photos items and categories already use (and their thumbnails) public when the setting is on.
 
 ## Photos and files (optional)
 
@@ -138,21 +138,15 @@ Three optional extensions can take part. Inventory never imports any of them up 
 
 | Extension | Role |
 |---|---|
-| [kempo-media](https://github.com/dustinpoissant/kempo-media) | A media library with its own image thumbnails. Files are served from `public/media/`, so anyone who knows a URL can fetch them |
-| [kempo-files](https://github.com/dustinpoissant/kempo-files) | A private file library: files live outside `public/` and every download is permission-checked |
-| [kempo-thumbs](https://github.com/dustinpoissant/kempo-thumbs) | Generates thumbnails for kempo-files, including frames from video and audio. It only works on kempo-files |
+| [kempo-media](https://github.com/dustinpoissant/kempo-media) | A media library: a kempo-files file plus kind, dimensions and alt text, with thumbnails from kempo-thumbs. It requires the other two, so installing it brings all three |
+| [kempo-files](https://github.com/dustinpoissant/kempo-files) | A file library: files live outside `public/` and every download is permission-checked, unless the file is marked public |
+| [kempo-thumbs](https://github.com/dustinpoissant/kempo-thumbs) | Generates thumbnails for kempo-files, including frames from video and audio |
 
 When an item has more than one photo, the first is its **primary** photo (the one shown on cards and lists). In the item form each other photo has a **Make primary** button that moves it to the front.
 
-Add a field of type "Photos / files" and every item gets an upload area. New uploads go to one library, chosen by the `media_provider` setting:
+Add a field of type "Photos / files" and every item gets an upload area. New uploads go to kempo-media when it is installed (it is kempo-files with thumbnails, so one upload gives you a stored file and its thumbnail), and to kempo-files directly on a site that has only that. There is no setting to choose; the old `media_provider` setting was retired, and `update.js` removes it.
 
-| Setting | Uploads go to |
-|---|---|
-| `auto` (default) | kempo-files when kempo-thumbs is also installed, otherwise kempo-media, otherwise kempo-files |
-| `kempo-media` | kempo-media (if installed) |
-| `kempo-files` | kempo-files (if installed) |
-
-A stored value records where its file lives, so files from both libraries keep working on the same item whichever one takes new uploads. The API returns a `media` map (stored id → `{ kind, name, alt, path, thumbnail }`) next to `linked`, so a client can show them. A kempo-files photo has no `thumbnail` until kempo-thumbs has generated one, so clients should fall back to `path`.
+A stored value records where its file lives (a bare id is a kempo-media asset, `files:<id>` a kempo-files file), so values written before this change, or by a site with only kempo-files, keep working on the same item as newer ones. The API returns a `media` map (stored id → `{ kind, name, alt, path, thumbnail }`) next to `linked`, so a client can show them. A kempo-files photo has no `thumbnail` until kempo-thumbs has generated one, so clients should fall back to `path`.
 
 - If a library is disabled later, items keep their stored ids and everything else keeps working. Files from that library show as missing, and only *adding* a file from it is refused; an item can still be edited with its existing list unchanged.
 - Deleting a file from its library leaves the id on the item, shown as a missing file.

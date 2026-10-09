@@ -1,7 +1,6 @@
 import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { getExtension, getSetting, triggerHook } from 'kempo/server/sdk.js';
-import { extensionOf, safeFileName } from './mediaSafety.js';
+import { safeFileName } from './mediaSafety.js';
 import { DEFAULT_RATIOS, resolveRatio } from './ratio.js';
 import { parseMediaId, filesId } from './fieldTypes.js';
 
@@ -9,16 +8,18 @@ import { parseMediaId, filesId } from './fieldTypes.js';
   Where item photos and files live. Three optional extensions can take part, and inventory works
   the same with none of them installed:
 
-    kempo-media   a media library with its own image thumbnails
-    kempo-files   a private file library; uploads need a signed-in user with files:download to view
+    kempo-media   a media library: a kempo-files file plus kind, dimensions and alt text, with
+                  thumbnails from kempo-thumbs. It requires the other two.
+    kempo-files   a file library; a non-public file needs files:download to view
     kempo-thumbs  generates thumbnails for kempo-files (images, and frames from video and audio)
 
   Nothing here imports them up front. Each is loaded on demand and only counts as available when it
-  is both installed as a package and enabled in kempo. Because kempo-thumbs only works on
-  kempo-files, it is only ever used for files stored there.
+  is both installed as a package and enabled in kempo.
 
-  A stored value says where it lives: a bare id is a kempo-media asset, "files:<id>" is a
-  kempo-files file. So values from either place keep resolving, whichever is used for new uploads.
+  New uploads go to kempo-media when it is there, because it already is kempo-files with thumbnails;
+  only a site with kempo-files alone uploads to kempo-files directly. Stored values keep saying where
+  they live, so older ones keep resolving: a bare id is a kempo-media asset, "files:<id>" is a
+  kempo-files file.
 */
 const loaders = {
   'kempo-media': () => import('kempo-media/sdk'),
@@ -51,22 +52,11 @@ export const mediaAvailable = async () => {
 };
 
 /*
-  Which provider new uploads go to: 'media', 'files' or null when neither is installed.
-
-  The `media_provider` setting can force one ('kempo-media' or 'kempo-files'). Left on 'auto',
-  kempo-files wins when kempo-thumbs is there to thumbnail it, because that is a better result than
-  kempo-media's; otherwise kempo-media wins, since a bare kempo-files has no thumbnails at all.
+  Which library new uploads go to: 'media', 'files' or null when neither is installed.
 */
-export const uploadProvider = async () => {
-  const found = await providers();
-  const [, choice] = await getSetting('kempo-inventory', 'media_provider', 'auto');
-  if(choice === 'kempo-media' && found.media) return 'media';
-  if(choice === 'kempo-files' && found.files) return 'files';
-  if(found.files && found.thumbs) return 'files';
-  if(found.media) return 'media';
-  if(found.files) return 'files';
-  return null;
-};
+export const chooseUploadProvider = found => found.media ? 'media' : found.files ? 'files' : null;
+
+export const uploadProvider = async () => chooseUploadProvider(await providers());
 
 /*
   The aspect ratios images are shown at, as CSS ("4 / 3"): { category, item }. They come from the
@@ -78,7 +68,7 @@ export const getImageRatios = async () => {
   return { category: resolveRatio(category, 'category'), item: resolveRatio(item, 'item') };
 };
 
-/* Whether photos uploaded to kempo-files are made public, so people who can only read the inventory can see them. */
+/* Whether new photos are made public, so people who can only read the inventory can see them. */
 export const publicPhotos = async () => {
   const [, value] = await getSetting('kempo-inventory', 'public_photos', true);
   return value !== false && value !== 'false';
@@ -173,15 +163,19 @@ export const readMedia = async storedId => {
       const { getMediaAsset } = await load('kempo-media');
       const [error, asset] = await getMediaAsset(rawId);
       if(error) return [error, null];
-      return [null, { name: asset.originalName, kind: asset.kind, alt: asset.altText ?? '', bytes: await readFile(join(process.cwd(), 'public', asset.path)) }];
+      // The asset's id is its kempo-files file id, and its bytes live in kempo-files
+      const { getFile, filePath } = await load('kempo-files');
+      const [fileError, file] = await getFile(asset.fileId);
+      if(fileError) return [fileError, null];
+      const [pathError, absolute] = await filePath(file);
+      if(pathError) return [pathError, null];
+      return [null, { name: asset.originalName, kind: asset.kind, alt: asset.altText ?? '', bytes: await readFile(absolute) }];
     }
   } catch {
     return [{ code: 404, msg: 'The file could not be read' }, null];
   }
   return [{ code: 409, msg: 'The library holding this file is not installed' }, null];
 };
-
-const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4', pdf: 'application/pdf' };
 
 /*
   Stores a file in whichever library new uploads go to (the same choice as an upload from the form), on
@@ -212,16 +206,12 @@ export const storeMedia = async ({ name, bytes, altText = '', userId }) => {
       }
       return [{ code: 409, msg: 'No free file name could be found' }, null];
     }
-    const { storeUpload, createMediaAsset } = await load('kempo-media');
+    const { uploadMediaAsset } = await load('kempo-media');
     const [, maxMb] = await getSetting('kempo-media', 'max_upload_size_mb', 250);
-    const [, thumbnailMaxDimension] = await getSetting('kempo-media', 'thumbnail_max_dimension', 480);
-    const [error, asset] = await storeUpload({
-      rootDir: join(process.cwd(), 'public'), filename: safe, data, mimeType: MIME[extensionOf(safe)] ?? 'application/octet-stream',
-      altText, uploadedBy: userId, maxBytes: Number(maxMb) * 1024 * 1024, thumbnailMaxDimension: Number(thumbnailMaxDimension),
+    const [error, asset] = await uploadMediaAsset({
+      filename: safe, data, altText, uploadedBy: userId, maxBytes: Number(maxMb) * 1024 * 1024, public: await publicPhotos(),
     });
-    if(error) return [error, null];
-    const [recordError, row] = await createMediaAsset(asset);
-    return recordError ? [recordError, null] : [null, row.id];
+    return error ? [error, null] : [null, asset.id];
   } catch {
     return [{ code: 500, msg: 'The file could not be stored' }, null];
   }

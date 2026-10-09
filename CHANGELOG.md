@@ -4,6 +4,13 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **New uploads go to kempo-media whenever it is installed, and the `media_provider` setting is gone.** kempo-media now sits on kempo-files and gets its thumbnails from kempo-thumbs, so the choice between "kempo-media with its own thumbnails" and "kempo-files with kempo-thumbs" no longer exists: one upload gives a stored file and its thumbnail either way. A site with only kempo-files still uploads there directly. `update.js` removes the retired setting.
+- **`public_photos` now covers kempo-media uploads too** (it used to apply only to kempo-files), so turning it off keeps new photos behind `files:download` whichever library takes them.
+- **Reading is unchanged.** Stored values still say where they live (a bare id is a kempo-media asset, `files:<id>` a kempo-files file), so everything written before keeps resolving. An export of a kempo-media photo now reads its bytes through kempo-files.
+- Needs kempo-media 0.3.0 or later for uploads (the earlier `storeUpload` / `createMediaAsset` pair it called no longer exists).
+
 ### Added
 
 - A **documentation site** (`docs-src/` built into `docs/` for GitHub Pages) with screenshots of the admin.
