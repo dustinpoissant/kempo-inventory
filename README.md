@@ -446,3 +446,7 @@ All routes require a session holding the permission above.
 ## Development
 
 The documentation site is written in `docs-src/` and built into `docs/` (served by GitHub Pages from the `docs` folder). Edit `docs-src/`, never `docs/`, then run `npm run docs:build`; `npm run docs:dev` serves it on port 4050. Screenshots come in pairs: write `<img src="./media/name.png" ...>` in a page, and put `name-light.png` and `name-dark.png` in `docs-src/media`. The build turns the tag into both images and the site shows the one matching the visitor's theme.
+
+## Dashboard widget
+
+Adds a **Inventory** widget to the kempo admin dashboard showing item, unit and out-of-stock counts and the latest stock movements, with a **New item** button. It is declared in `widgets` in `kempo-config.json` and registered when the extension is installed or updated; people only see it if they hold its permission, and can hide, reorder or resize it from the dashboard's Customize dialog. Needs a kempo with the dashboard (see kempo's `docs/dashboard.md`); on an older kempo the entry is ignored.

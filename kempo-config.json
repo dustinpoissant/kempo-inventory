@@ -1,6 +1,22 @@
 {
   "public-scope": "inventory",
   "schema": "./server/db/schema.js",
+  "widgets": [
+    {
+      "key": "stock",
+      "title": "Inventory",
+      "description": "Item and unit counts, what is out of stock and the latest stock movements.",
+      "icon": "archive",
+      "element": "k-inv-widget",
+      "module": "/inventory/components/StockWidget.js",
+      "defaultWidth": 2,
+      "defaultHeight": 2,
+      "minWidth": 1,
+      "minHeight": 2,
+      "permission": "kempo-inventory:items:read",
+      "priority": 100
+    }
+  ],
   "permissions": [
     {
       "name": "kempo-inventory:items:read",
