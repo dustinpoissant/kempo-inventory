@@ -1,4 +1,6 @@
 {
+  "docs": "https://github.com/dustinpoissant/kempo-inventory#readme",
+  "git": "https://github.com/dustinpoissant/kempo-inventory",
   "public-scope": "inventory",
   "schema": "./server/db/schema.js",
   "widgets": [

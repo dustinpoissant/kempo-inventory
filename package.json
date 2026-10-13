@@ -21,9 +21,6 @@
     "docs:build": "node scripts/build-docs.js",
     "docs:dev": "npx kempo-server --root docs --port 4050"
   },
-  "kempo": {
-    "public-scope": "inventory"
-  },
   "exports": {
     "./install": "./install.js",
     "./update": "./update.js",
@@ -42,7 +39,7 @@
     "drizzle-orm": "^0.45.2"
   },
   "peerDependencies": {
-    "kempo": ">=4.3.0",
+    "kempo": ">=4.5.8",
     "kempo-ui": ">=0.5.0",
     "kempo-media": ">=0.3.0",
     "kempo-files": ">=0.1.3",

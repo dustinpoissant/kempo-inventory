@@ -19,7 +19,7 @@ const config = JSON.parse(await readFile(path.join(root, 'kempo-config.json'), '
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 const core = await import(pathToFileURL(path.join(root, 'node_modules', 'kempo', 'server', 'utils', 'dashboard', 'helpers.js')).href).catch(() => null);
 
-const scope = `/${pkg.kempo?.['public-scope'] || config['public-scope']}/`;
+const scope = `/${config['public-scope']}/`;
 const permissions = new Set((config.permissions || []).map(p => p.name));
 
 const ELEMENT = /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/;
@@ -41,6 +41,11 @@ const problems = widget => {
   if(!Array.isArray(actions) || actions.length > 3 || actions.some(action => !action?.label || !LOCAL_PATH.test(action?.href))) found.push('actions must be at most 3 { label, href } with a site path');
   return found;
 };
+
+test('package.json carries no kempo field: kempo-config.json is where an extension is declared', () => {
+  assert.equal('kempo' in pkg, false, `package.json has a kempo field (${JSON.stringify(pkg.kempo)}); move it into kempo-config.json`);
+  assert.ok(config['public-scope'], 'kempo-config.json has no public-scope');
+});
 
 test('kempo-config.json declares at least one widget', () => {
   assert.ok(Array.isArray(config.widgets) && config.widgets.length > 0);
