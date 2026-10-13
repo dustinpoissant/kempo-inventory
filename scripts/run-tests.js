@@ -1,9 +1,8 @@
 import { spawnSync } from 'child_process';
-import { pathToFileURL } from 'url';
-import path from 'path';
 
 /*
-  The two test tiers, then the command to run in each.
+  The two test tiers, then the command to run in each. `node --test` runs every file in its own
+  process, so there is deliberately no preload here: only the files that use the database pay for it.
 
     unit         `KEMPO_DB=pglite`: kempo's database module gives an in-process, in-memory Postgres
                  (PGlite) holding the tables in drizzle.config.js, so nothing external is needed and a
@@ -30,9 +29,6 @@ const env = { ...process.env };
 if(tier === 'unit'){
   env.KEMPO_DB = 'pglite';
   delete env.KEMPO_TEST_TIER;
-  // Create the database before any test file can install globals that confuse it. See the preload.
-  const preload = pathToFileURL(path.resolve(import.meta.dirname, '..', 'tests', 'helpers', 'preload.js')).href;
-  env.NODE_OPTIONS = `${env.NODE_OPTIONS || ''} --import=${preload}`.trim();
 } else {
   delete env.KEMPO_DB;
   env.KEMPO_TEST_TIER = 'integration';
