@@ -15,7 +15,8 @@
   "type": "module",
   "main": "sdk.js",
   "scripts": {
-    "test": "node --test",
+    "test": "node scripts/run-tests.js unit node --test",
+    "test:integration": "node scripts/run-tests.js integration node --test",
     "link:local": "npm install ../kempo ../kempo-server ../kempo-ui --no-save --no-legacy-peer-deps --force",
     "docs:build": "node scripts/build-docs.js",
     "docs:dev": "npx kempo-server --root docs --port 4050"
@@ -59,6 +60,7 @@
     }
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
     "highlight.js": "^11.11.1"
   }
 }

@@ -53,8 +53,11 @@ jobs:
       - name: Install the host for the test gate
         run: npm install --no-save --no-legacy-peer-deps --force kempo@latest kempo-ui@latest kempo-server@latest
 
-      - name: Run Unit Tests
+      - name: Run unit tests
         run: npm test
+
+      - name: Run integration tests
+        run: npm run test:integration
 
       - name: Set version type
         id: version
