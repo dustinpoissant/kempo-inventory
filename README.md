@@ -321,7 +321,7 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `unregisterFields(owner)` | Remove every field your extension owns, and their values |
 | `FIELD_TYPES`, `EVENTS` | The field types and the hook event names |
 
-An item looks like `{ id, sku, name, description, category, tags, quantity, fields: { ...custom values }, owner, created, updated }`.
+An item looks like `{ id, sku, name, description, category, tags, quantity, held, fields: { ...custom values }, owner, created, updated }`.
 
 ### Several items at once
 
@@ -339,6 +339,32 @@ const [error, { items }] = await adjustStockMany(
 
 Changes to the same item are added together and one that nets to nothing is left out. Every item goes through the same `before_adjust` guard as `adjustStock`, and each fires `stock:adjusted` once everything is committed. `ref` is written on every stock movement (as `[order-1042]` in its note) so the change can be found, and reversed, later.
 
+### Held stock
+
+An item has two figures: **`quantity`**, what is *available* now, and **`held`**, what is set aside for something that has not finished — an order waiting for its payment, a job waiting for its materials. The stock the item really has is the two added together.
+
+`quantity` stays the figure everything already reads, so holding stock lowers what can be sold or used everywhere without anything else having to know about holds. Three moves, each all or nothing across every item in the call, and each recorded as a movement (`heldDelta`, `heldAfter`):
+
+| Function | Moves | When |
+|---|---|---|
+| `holdStock(changes, options)` | available → **held** | an order is placed |
+| `releaseStock(changes, options)` | held → **available** | it was cancelled, expired or failed |
+| `consumeHeld(changes, options)` | held → **gone** | it was fulfilled: the units have left |
+
+```javascript
+import { holdStock, consumeHeld, releaseStock } from 'kempo-inventory/sdk';
+
+const [error, { items }] = await holdStock([{ id: resin.id, quantity: 175 }], { ref: 'order-1042', owner: 'my-extension' });
+// error.code 409 and "Not enough of Resin (g) is available to hold": nothing changed
+
+await consumeHeld([{ id: resin.id, quantity: 175 }], { ref: 'order-1042', owner: 'my-extension' });   // paid
+await releaseStock([{ id: resin.id, quantity: 175 }], { ref: 'order-1042', owner: 'my-extension' });   // or not
+```
+
+`changes` is `[{ id, quantity }]` (or one `{ id, quantity }`), with `quantity` a whole number above zero; the same item twice is added together. Every move is a single conditional update, so concurrent callers cannot hold what is not available, release what is not held, or take either figure below zero. `ref` is written on every movement so what was held for an order can be found and given back later.
+
+Holding and releasing change what is available, so they also fire `stock:adjusted` (with `reason` `hold` or `release`), and anything that reacts to availability — such as kempo-products-inventory — stays correct. `stock:held` fires for all three. `adjustStock` leaves `held` alone, and an item with stock on hold cannot be deleted until it is given back. The admin list shows an **On hold** column once anything is held.
+
 ### Adding to the item page
 
 An extension can add to the admin item page by supplying a fragment named `inventory-item-actions`, in `admin/inventory-item-actions.fragment.html` in its own package. It appears under the item form, and reads the item from `?id=` in the address. (kempo-products-inventory uses it for "Make product from this item".)
@@ -355,6 +381,7 @@ Declare these in your `kempo-config.json` `hooks`. Every payload also carries `a
 | `kempo-inventory:item:before_update` | `{ item, changes: { sku?, name?, description?, fields? }, userId }` | edit `changes` |
 | `kempo-inventory:item:before_delete` | `{ item, userId }` | refuse only |
 | `kempo-inventory:stock:before_adjust` | `{ item, draft: { delta, reason, note }, userId }` | edit `draft` |
+| `kempo-inventory:stock:before_hold` | `{ item, draft: { kind, quantity, reason, note }, userId }` (`kind` is `hold`, `release` or `consume`) | edit `draft` |
 | `kempo-inventory:category:before_update` | `{ name, newName, changes: { description?, tags?, image? }, userId }` | refuse only |
 | `kempo-inventory:category:before_delete` | `{ category, name, userId }` (`category` is `null` for one with no record) | refuse only |
 | `kempo-inventory:field:before_create` | `{ draft }` | refuse only |
@@ -371,6 +398,7 @@ Ownership is checked first, so these only run for changes that would otherwise g
 | `kempo-inventory:item:updated` | `{ item, previous, userId }` |
 | `kempo-inventory:item:deleted` | `{ item, userId }` |
 | `kempo-inventory:stock:adjusted` | `{ item, previousQuantity, delta, reason, note, movement, userId }` |
+| `kempo-inventory:stock:held` | `{ item, kind, quantity, previousQuantity, previousHeld, movement, userId }` |
 | `kempo-inventory:category:updated` | `{ category, previous, moved, userId }` |
 | `kempo-inventory:category:deleted` | `{ category, userId }` |
 | `kempo-inventory:field:created` | `{ field }` |

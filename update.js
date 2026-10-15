@@ -8,6 +8,11 @@ import { getSetting, setSetting, deleteSetting } from 'kempo/server/sdk.js';
   this on a database that already has the change is harmless.
 */
 export default async () => {
+  // Next: held stock. `quantity` stays what is available; `held` is what is set aside (server/utils/holds.js)
+  await db.execute(sql`ALTER TABLE "kempoInventoryItem" ADD COLUMN IF NOT EXISTS "held" integer NOT NULL DEFAULT 0`);
+  await db.execute(sql`ALTER TABLE "kempoInventoryMovement" ADD COLUMN IF NOT EXISTS "heldDelta" integer NOT NULL DEFAULT 0`);
+  await db.execute(sql`ALTER TABLE "kempoInventoryMovement" ADD COLUMN IF NOT EXISTS "heldAfter" integer NOT NULL DEFAULT 0`);
+
   // Next: media_provider is retired. kempo-media sits on kempo-files, so new uploads go through it whenever it is installed.
   await deleteSetting('kempo-inventory', 'media_provider');
 

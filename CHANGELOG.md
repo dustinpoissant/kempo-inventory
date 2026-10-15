@@ -13,6 +13,8 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ### Added
 
+- **Held stock.** An item has `quantity` (what is available) and `held` (what is set aside for something unfinished, such as an order awaiting payment). `holdStock`, `releaseStock` and `consumeHeld` move stock available → held, held → available and held → gone, all or nothing across several items, each recorded as a movement with `heldDelta` and `heldAfter`. Holding and releasing also fire `stock:adjusted`, so everything that reacts to availability stays correct; new `stock:before_hold` and `stock:held` hooks. An item with stock on hold cannot be deleted. `update.js` adds the columns.
+- The test scripts run files one at a time: they share and empty one database, which two files at once corrupted.
 - **Dashboard widget.** A **Inventory** widget on the kempo admin dashboard showing item, unit and out-of-stock counts and the latest stock movements, with a **New item** button, declared in `widgets` in `kempo-config.json`. Needs a kempo with the dashboard; ignored on older versions.
 - A **documentation site** (`docs-src/` built into `docs/` for GitHub Pages) with screenshots of the admin.
 - **`adjustStockMany`**: several stock changes applied together, all or nothing, with a reference written on every movement so they can be reversed. For events that touch several items, such as the materials of a recipe.

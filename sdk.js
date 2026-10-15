@@ -36,6 +36,8 @@ export {
   getMovements,
 } from './server/utils/items.js';
 
+export { holdStock, releaseStock, consumeHeld } from './server/utils/holds.js';
+
 export {
   getFields,
   getField,

@@ -15,8 +15,8 @@
   "type": "module",
   "main": "sdk.js",
   "scripts": {
-    "test": "node scripts/run-tests.js unit node --test",
-    "test:integration": "node scripts/run-tests.js integration node --test",
+    "test": "node scripts/run-tests.js unit node --test --test-concurrency=1",
+    "test:integration": "node scripts/run-tests.js integration node --test --test-concurrency=1",
     "link:local": "npm install ../kempo ../kempo-server ../kempo-ui --no-save --no-legacy-peer-deps --force",
     "docs:build": "node scripts/build-docs.js",
     "docs:dev": "npx kempo-server --root docs --port 4050"

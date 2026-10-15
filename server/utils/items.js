@@ -30,6 +30,7 @@ const shape = row => row && ({
   description: row.description,
   category: row.category,
   quantity: row.quantity,
+  held: row.held ?? 0,
   tags: row.tags ?? [],
   fields: row.data ?? {},
   owner: row.owner,
@@ -317,6 +318,7 @@ export const deleteItem = async (id, { userId = '', owner = '' } = {}) => {
   const [lookupError, existing] = await getItem(id);
   if(lookupError) return [lookupError, null];
   if(existing.owner !== owner) return [notYours('item', existing, owner), null];
+  if(existing.held > 0) return [{ code: 409, msg: `${existing.held} of this item are on hold for something unfinished, so it cannot be deleted yet` }, null];
 
   const refused = await guard(EVENTS.itemBeforeDelete, { item: existing, userId, actor: owner });
   if(refused) return [refused, null];
@@ -359,7 +361,7 @@ export const adjustStock = async (id, { delta, reason = 'adjustment', note = '',
         .returning();
       if(!row) return null;
       const [movement] = await tx.insert(kempoInventoryMovement).values({
-        id: newId(), itemId: id, delta: change, quantityAfter: row.quantity,
+        id: newId(), itemId: id, delta: change, quantityAfter: row.quantity, heldAfter: row.held,
         reason: String(draft.reason || 'adjustment'), note: String(draft.note || ''), userId, created: new Date(),
       }).returning();
       return { row, movement };
@@ -451,7 +453,7 @@ export const adjustStockMany = async (changes, { reason = 'adjustment', note = '
           .returning();
         if(!row) throw new Refusal({ code: 409, msg: `Insufficient stock of ${existing.get(entry.id).name}` });
         const [movement] = await tx.insert(kempoInventoryMovement).values({
-          id: newId(), itemId: entry.id, delta, quantityAfter: row.quantity, reason: why,
+          id: newId(), itemId: entry.id, delta, quantityAfter: row.quantity, heldAfter: row.held, reason: why,
           note: ref ? `${text ? `${text} ` : ''}[${ref}]` : text, userId, created: new Date(),
         }).returning();
         results.push({ row, movement, delta });

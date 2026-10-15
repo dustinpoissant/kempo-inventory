@@ -18,6 +18,8 @@ export const EVENTS = {
   itemDeleted: 'kempo-inventory:item:deleted',
   stockBeforeAdjust: 'kempo-inventory:stock:before_adjust',
   stockAdjusted: 'kempo-inventory:stock:adjusted',
+  stockBeforeHold: 'kempo-inventory:stock:before_hold',
+  stockHeld: 'kempo-inventory:stock:held',
   categoryBeforeUpdate: 'kempo-inventory:category:before_update',
   categoryUpdated: 'kempo-inventory:category:updated',
   categoryBeforeDelete: 'kempo-inventory:category:before_delete',
