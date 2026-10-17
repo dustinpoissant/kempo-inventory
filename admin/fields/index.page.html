@@ -63,7 +63,7 @@ locked: true
       for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
       $table.appendChild($control);
     };
-    addControl('inventory-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    addControl('k-inventory-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
     $table.setAttribute('request-delete', '');
     addControl('kc-tc-delete-record', 'after');
 

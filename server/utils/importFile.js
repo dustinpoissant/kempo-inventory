@@ -73,7 +73,7 @@ const mediaIn = ({ items, categories }) => {
   return paths;
 };
 
-const PERMISSIONS = { canUpdate: true, canAdjustStock: true, maxRows: MAX_ITEMS };   // the caller is the top tier, which holds all of these
+const PERMISSIONS = { canUpdate: true, canAdjustQuantity: true, maxRows: MAX_ITEMS };   // the caller is the top tier, which holds all of these
 
 /* What importing this file would do, changing nothing: { results, categoryResults, summary, media }. */
 export const previewImport = async (bytes, { userId }) => {

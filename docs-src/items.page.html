@@ -1,4 +1,4 @@
-<page pageName="Items and stock" title="Items and stock - Kempo Inventory">
+<page pageName="Items and quantity" title="Items and quantity - Kempo Inventory">
   <content>
     <h2 id="items">Items</h2>
     <p>An item has a <strong>SKU</strong> (unique), a <strong>name</strong>, a <strong>quantity</strong>, a <strong>description</strong>, an optional <a href="./fields.html#categories">category</a>, optional <a href="#tags">tags</a>, and whatever <a href="./fields.html#custom-fields">custom fields</a> you have set up.</p>
@@ -10,20 +10,20 @@
     </div>
 
     <p><strong>Adding and editing an item are pages, not dialogs.</strong> A dialog closes with a stray tap outside it and takes everything entered with it, including photos taken with a camera. These pages keep your work, and while anything entered has not been saved, leaving the page (a link, the back button, a refresh) asks first. <strong>Create and add another</strong> starts a fresh, empty form for the next item.</p>
-    <p>An item a person manages can be edited freely. An item that another extension owns keeps its SKU, name and category fixed, and everything else, including stock, stays editable. See <a href="./extending.html#ownership">ownership</a>.</p>
+    <p>An item a person manages can be edited freely. An item that another extension owns keeps its SKU, name and category fixed, and everything else, including quantity, stays editable. See <a href="./extending.html#ownership">ownership</a>.</p>
 
-    <h2 id="adjusting" class="mt">Changing stock</h2>
-    <p>Stock changes only through one action, the adjust button on an item's row, and not by editing the quantity. That is what keeps the history honest. Each change records a <strong>reason</strong>, an optional <strong>note</strong>, who made it, and the quantity afterwards.</p>
+    <h2 id="adjusting" class="mt">Changing quantity</h2>
+    <p>Quantity changes only through one action, the adjust button on an item's row, and not by editing the quantity. That is what keeps the history honest. Each change records a <strong>reason</strong>, an optional <strong>note</strong>, who made it, and the quantity afterwards.</p>
     <div class="mb">
-      <img src="./media/admin-adjust.png" alt="The Adjust stock dialog for Red paint, showing the current quantity, a change field, a reason, a note, and a history table of earlier changes with their reasons and balances." class="full b r" />
-      <small class="d-b tc-muted">Adjusting stock. The history below the form is every change ever made to the item, newest first, with the balance after each.</small>
+      <img src="./media/admin-adjust.png" alt="The Adjust quantity dialog for Red paint, showing the current quantity, a change field, a reason, a note, and a history table of earlier changes with their reasons and balances." class="full b r" />
+      <small class="d-b tc-muted">Adjusting quantity. The history below the form is every change ever made to the item, newest first, with the balance after each.</small>
     </div>
     <ul>
-      <li>Enter a negative change to take stock out. A change that would take it below zero is refused, atomically, so two people can never take the same last unit.</li>
-      <li>The reasons are <strong>received</strong>, <strong>sold</strong>, <strong>damaged</strong>, <strong>correction</strong> and <strong>other</strong>. An item's first stock is recorded as <strong>initial</strong>.</li>
-      <li>Other extensions change stock through the same action, so their changes appear in the same history. The note can carry a reference, such as an order number.</li>
+      <li>Enter a negative change to take quantity out. A change that would take it below zero is refused, atomically, so two people can never take the same last unit.</li>
+      <li>The reasons are <strong>received</strong>, <strong>sold</strong>, <strong>damaged</strong>, <strong>correction</strong> and <strong>other</strong>. An item's first quantity is recorded as <strong>initial</strong>.</li>
+      <li>Other extensions change quantity through the same action, so their changes appear in the same history. The note can carry a reference, such as an order number.</li>
     </ul>
-    <p>The stock numbers are only for people who manage stock. See <a href="./access.html#stock-counts">who sees stock counts</a>.</p>
+    <p>The quantity numbers are only for people who manage quantity. See <a href="./access.html#quantity-counts">who sees quantity counts</a>.</p>
 
     <h2 id="tags" class="mt">Tags</h2>
     <p>Items and categories can be tagged with short labels such as <code>acrylic</code>, <code>red</code>, <code>matte</code>. Tags are <strong>always lower case</strong>, with spacing tidied, so <code>Water-Based</code> and <code>water-based</code> are one tag. An item has at most 30 tags, each up to 40 characters.</p>

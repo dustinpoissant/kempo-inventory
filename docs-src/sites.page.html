@@ -1,16 +1,16 @@
 <page pageName="On your own site" title="On your own site - Kempo Inventory">
   <content>
-    <p>This extension ships the data, the API, and an admin screen for managing them. A site that wants its own screens (a dashboard, a stock page, a storefront) builds them itself, and can reuse the same browser modules the admin uses.</p>
+    <p>This extension ships the data, the API, and an admin screen for managing them. A site that wants its own screens (a dashboard, a quantity page, a storefront) builds them itself, and can reuse the same browser modules the admin uses.</p>
 
     <h2 id="browser-sdk">The browser SDK</h2>
     <p>The API client is at <code>/inventory/sdk.js</code>. Every call resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
-    <pre><code class="language-js">import { getItems, getFields, adjustStock } from '/inventory/sdk.js';
+    <pre><code class="language-js">import { getItems, getFields, adjustQuantity } from '/inventory/sdk.js';
 
 const [error, data] = await getItems({ q: 'paint', limit: 20 });
 // data.items, data.total, data.linked (item links), data.media (photos)
 
-await adjustStock(itemId, { delta: -5, reason: 'sold', note: 'Order 1042' });</code></pre>
-    <p>Whoever is calling needs the matching permission, or the <code>public_read</code> setting must be on. Stock counts only come back for people who manage stock. See <a href="./access.html#stock-counts">who sees stock counts</a>.</p>
+await adjustQuantity(itemId, { delta: -5, reason: 'sold', note: 'Order 1042' });</code></pre>
+    <p>Whoever is calling needs the matching permission, or the <code>public_read</code> setting must be on. Quantity counts only come back for people who manage quantity. See <a href="./access.html#quantity-counts">who sees quantity counts</a>.</p>
 
     <h2 id="dialogs" class="mt">Forms and dialogs</h2>
     <p>The item form builds itself from the field list, so custom fields, item links and photo uploads work without any code of your own.</p>
@@ -19,7 +19,7 @@ await adjustStock(itemId, { delta: -5, reason: 'sold', note: 'Order 1042' });</c
 openItemDialog({ item, fields, onSaved: item => reload() });                    // edit an item
 openItemDialog({ fields, defaults: { category: 'Paint' }, onSaved });           // a new item, with a category filled in
 openItemDialog({ fields, askQuantity: false, defaults: { quantity: 1 }, onSaved });
-openAdjustDialog({ item, onSaved: item => reload() });                          // add or remove stock</code></pre>
+openAdjustDialog({ item, onSaved: item => reload() });                          // add or remove quantity</code></pre>
     <p><code>fields</code> is the full list from <code>getFields()</code>. The form shows the default fields plus those of the item's category, and swaps them as the category changes. If you want your own layout, <code>fieldTemplate</code> and <code>readField</code> (from <code>ItemFields.js</code>) render and read a single field's input, and <code>displayValue</code> gives a plain-text version that is safe to put in a table cell.</p>
 
     <h2 id="pages" class="mt">Adding and editing items</h2>

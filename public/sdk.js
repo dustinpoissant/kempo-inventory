@@ -32,7 +32,7 @@ export const getItem = id => req('GET', `${BASE}/items/${enc(id)}`);
 export const createItem = data => req('POST', `${BASE}/items`, data);
 export const updateItem = (id, data) => req('PATCH', `${BASE}/items/${enc(id)}`, data);
 export const deleteItem = id => req('DELETE', `${BASE}/items/${enc(id)}`);
-export const adjustStock = (id, data) => req('POST', `${BASE}/items/${enc(id)}/adjust`, data);
+export const adjustQuantity = (id, data) => req('POST', `${BASE}/items/${enc(id)}/adjust`, data);
 export const getMovements = (params = {}) => req('GET', `${BASE}/movements${buildQuery(params)}`);
 
 /*

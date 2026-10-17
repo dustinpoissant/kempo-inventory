@@ -28,14 +28,14 @@ test('groups form a ladder: viewer < manager < admin, and only admin sets up fie
 });
 
 test('every permission checked by the API is declared', () => {
-  const used = ['items:read', 'items:create', 'items:update', 'items:delete', 'stock:adjust', 'fields:manage'];
+  const used = ['items:read', 'items:create', 'items:update', 'items:delete', 'quantity:adjust', 'fields:manage'];
   for(const name of used) assert.ok(permissionNames.includes(`kempo-inventory:${name}`), name);
 });
 
 test('event names are unique and namespaced', () => {
   const names = Object.values(EVENTS);
   assert.equal(new Set(names).size, names.length);
-  for(const name of names) assert.match(name, /^kempo-inventory:(item|stock|field|category):[a-z_]+$/);
+  for(const name of names) assert.match(name, /^kempo-inventory:(item|quantity|field|category):[a-z_]+$/);
 });
 
 test('the schema declares the same indexes install.js creates', () => {

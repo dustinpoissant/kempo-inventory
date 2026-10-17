@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Import and export - Kempo Inventory</title>
-  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <meta name="description" content="An inventory system for kempo cms: items, quantity with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
   <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
@@ -66,10 +66,10 @@
         <a href="./#quick-start" class="d-b">Quick start</a>
         <a href="./#works-with" class="d-b">Works with</a>
       </div>
-      <h5><a href="./items.html">Items and stock</a></h5>
+      <h5><a href="./items.html">Items and quantity</a></h5>
       <div class="ml mb -mt">
         <a href="./items.html#items" class="d-b">Items</a>
-        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#adjusting" class="d-b">Changing quantity</a>
         <a href="./items.html#tags" class="d-b">Tags</a>
         <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
       </div>
@@ -89,7 +89,7 @@
       <h5><a href="./access.html">Photos and access</a></h5>
       <div class="ml mb -mt">
         <a href="./access.html#who-reads" class="d-b">Who can read</a>
-        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#quantity-counts" class="d-b">Who sees quantity</a>
         <a href="./access.html#photos" class="d-b">Photos and files</a>
         <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
       </div>
@@ -140,7 +140,7 @@
   <main>
     <h1>Import and export</h1>
     
-    <p><strong>Export</strong> and <strong>Import</strong> are on the Inventory page in the admin. Both are limited to the <strong>top tier</strong>: the <code>kempo-inventory:fields:manage</code> permission, which the <code>kempo-inventory:admin</code> group holds. A manager, a viewer or a signed-out visitor gets a 403 (or 401) and does not see the buttons, because an export carries the whole inventory out, and an import can rewrite and re-stock all of it.</p>
+    <p><strong>Export</strong> and <strong>Import</strong> are on the Inventory page in the admin. Both are limited to the <strong>top tier</strong>: the <code>kempo-inventory:fields:manage</code> permission, which the <code>kempo-inventory:admin</code> group holds. A manager, a viewer or a signed-out visitor gets a 403 (or 401) and does not see the buttons, because an export carries the whole inventory out, and an import can rewrite and re-quantity all of it.</p>
 
     <h2 id="export" class="mt">Export</h2>
     <div class="mb">
@@ -171,7 +171,7 @@
     </div>
     <p>Things worth knowing:</p>
     <ul>
-      <li>An empty value in the file never clears anything. A changed quantity is recorded as a stock adjustment with the reason "import", so the history stays honest.</li>
+      <li>An empty value in the file never clears anything. A changed quantity is recorded as a quantity adjustment with the reason "import", so the history stays honest.</li>
       <li>An import never creates or changes <strong>fields</strong>. A value only comes across when a field with the same key exists and applies to the item's category. The rest are ignored and counted.</li>
       <li>Rows are independent: one that fails (a missing name, a bad number, a required field with no value) does not stop the others.</li>
       <li>A field linking to another item is exported as that item's SKU and resolved by SKU on import, including to items created in the same import.</li>

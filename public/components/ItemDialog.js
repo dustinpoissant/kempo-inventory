@@ -2,7 +2,7 @@ import { html } from '/kempo-ui/lit-all.min.js';
 import Toast from '/kempo-ui/components/Toast.js';
 import Dialog from '/kempo-ui/components/Dialog.js';
 import '/kempo-ui/components/Table.js';
-import { getItem, adjustStock } from '/inventory/sdk.js';
+import { getItem, adjustQuantity } from '/inventory/sdk.js';
 import { createItemForm } from '/inventory/components/ItemForm.js';
 
 /*
@@ -17,7 +17,7 @@ import { createItemForm } from '/inventory/components/ItemForm.js';
     openItemDialog({ fields, defaults: { fields: { brand: 'Vallejo' } }, onSaved: ... });   // custom fields filled in
     openItemDialog({ item, fields, onSaved: item => reload() });           // edit an item
     openItemDialog({ fields, askQuantity: false, defaults: { quantity: 1 }, onSaved });   // no quantity box: the item just exists
-    openAdjustDialog({ item, onSaved: item => reload() });                 // add or remove stock
+    openAdjustDialog({ item, onSaved: item => reload() });                 // add or remove quantity
 
   `fields` is the full field list from getFields(). The form shows the default fields plus those of the
   item's category, and swaps them as the Category box changes. `onSaved` runs after the change is stored.
@@ -71,7 +71,7 @@ export const openAdjustDialog = async ({ item, onSaved = () => {} } = {}) => {
     <div class="p" style=${SCROLL}>
       <p class="mb">Current quantity: <strong>${data.item.quantity}</strong></p>
       <div class="mb">
-        <label class="d-b mb-sm" for="dlg-delta">Change (negative removes stock)</label>
+        <label class="d-b mb-sm" for="dlg-delta">Change (negative removes quantity)</label>
         <input type="number" id="dlg-delta" class="full" step="1" required>
       </div>
       <div class="mb">
@@ -92,7 +92,7 @@ export const openAdjustDialog = async ({ item, onSaved = () => {} } = {}) => {
       <k-table id="historyTable" placeholder="No movements yet."></k-table>
     </div>
   `, {
-    title: `Adjust stock: ${data.item.name}`,
+    title: `Adjust quantity: ${data.item.name}`,
     confirmText: 'Apply',
     cancelText: 'Close',
     confirmAction: async event => {
@@ -102,17 +102,17 @@ export const openAdjustDialog = async ({ item, onSaved = () => {} } = {}) => {
         Toast.error('Enter a non-zero whole number');
         return;
       }
-      const [adjustError, adjusted] = await adjustStock(item.id, {
+      const [adjustError, adjusted] = await adjustQuantity(item.id, {
         delta,
         reason: $dialog.querySelector('#dlg-reason').value,
         note: $dialog.querySelector('#dlg-note').value,
       });
       if(adjustError){
-        Toast.error(adjustError.msg || 'Failed to adjust stock');
+        Toast.error(adjustError.msg || 'Failed to adjust quantity');
         return;
       }
       $dialog.close();
-      Toast.success('Stock updated');
+      Toast.success('Quantity updated');
       onSaved(adjusted.item);
     },
   });

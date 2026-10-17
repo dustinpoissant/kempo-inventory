@@ -8,10 +8,13 @@ import { getSetting, setSetting, deleteSetting } from 'kempo/server/sdk.js';
   this on a database that already has the change is harmless.
 */
 export default async () => {
-  // Next: held stock. `quantity` stays what is available; `held` is what is set aside (server/utils/holds.js)
-  await db.execute(sql`ALTER TABLE "kempoInventoryItem" ADD COLUMN IF NOT EXISTS "held" integer NOT NULL DEFAULT 0`);
-  await db.execute(sql`ALTER TABLE "kempoInventoryMovement" ADD COLUMN IF NOT EXISTS "heldDelta" integer NOT NULL DEFAULT 0`);
-  await db.execute(sql`ALTER TABLE "kempoInventoryMovement" ADD COLUMN IF NOT EXISTS "heldAfter" integer NOT NULL DEFAULT 0`);
+  // Stock became quantity everywhere. The permission to change it was kempo-inventory:stock:adjust: move every grant to the new name, so nobody loses the right.
+  const OLD = 'kempo-inventory:stock:adjust';
+  const NEW = 'kempo-inventory:quantity:adjust';
+  await db.execute(sql`INSERT INTO "permission" ("name", "description", "owner", "createdAt") SELECT ${NEW}, "description", "owner", "createdAt" FROM "permission" WHERE "name" = ${OLD} ON CONFLICT DO NOTHING`);
+  await db.execute(sql`UPDATE "groupPermission" SET "permissionName" = ${NEW} WHERE "permissionName" = ${OLD} AND NOT EXISTS (SELECT 1 FROM "groupPermission" other WHERE other."groupName" = "groupPermission"."groupName" AND other."permissionName" = ${NEW})`);
+  await db.execute(sql`DELETE FROM "groupPermission" WHERE "permissionName" = ${OLD}`);
+  await db.execute(sql`DELETE FROM "permission" WHERE "name" = ${OLD}`);
 
   // Next: media_provider is retired. kempo-media sits on kempo-files, so new uploads go through it whenever it is installed.
   await deleteSetting('kempo-inventory', 'media_provider');
@@ -59,7 +62,7 @@ export default async () => {
 
   // 0.9: optional public (signed-out) browsing. Added only when missing, and off.
   const [, publicRead] = await getSetting('kempo-inventory', 'public_read', null);
-  if(publicRead === null) await setSetting('kempo-inventory', 'public_read', false, 'boolean', false, 'Let anyone, signed in or not, browse the inventory (items, categories, photos). They never see stock counts. Off by default: reading otherwise needs the items:read permission.');
+  if(publicRead === null) await setSetting('kempo-inventory', 'public_read', false, 'boolean', false, 'Let anyone, signed in or not, browse the inventory (items, categories, photos). They never see quantity counts. Off by default: reading otherwise needs the items:read permission.');
 
   // 0.8: photos are public by default, so read-only users can see them. Added only when missing.
   const [, publicSetting] = await getSetting('kempo-inventory', 'public_photos', null);

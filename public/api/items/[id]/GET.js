@@ -7,8 +7,8 @@ export default async (request, response) => {
 
   const [error, item] = await getItem(request.params.id);
   if(error) return response.status(error.code).json({ error: error.msg });
-  /* The stock history is all counts, so it is only for people who manage stock. */
-  const [, movements] = access.canSeeStock ? await getMovements({ itemId: item.id, limit: 100 }) : [null, []];
+  /* The quantity history is all counts, so it is only for people who manage quantity. */
+  const [, movements] = access.canSeeQuantity ? await getMovements({ itemId: item.id, limit: 100 }) : [null, []];
   const [, linked] = await getLinked(item);
   const [, media] = await getMedia(item);
   response.json({ item: forCaller(item, access), movements: movements || [], linked: linked || {}, media: media || {} });

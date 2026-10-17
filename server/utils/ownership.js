@@ -5,7 +5,7 @@ import { tidyCategory } from './categoryLogic.js';
   extension that created it, and `actor` is whoever is making the change in the same terms: the
   HTTP layer never names an actor ('' = a person), only an extension calling the server SDK can.
 
-  Ownership never changes what stock does: anyone with the permission can still adjust an owned
+  Ownership never changes what quantity does: anyone with the permission can still adjust an owned
   item's quantity. It protects what the owner builds on:
 
     items       sku, name, category and deletion belong to the owner

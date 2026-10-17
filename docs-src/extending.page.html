@@ -5,7 +5,7 @@
   "dependencies": ["kempo-inventory"],
   "hooks": {
     "kempo-inventory:item:before_create": "./hooks/before-create.js",
-    "kempo-inventory:stock:adjusted": "./hooks/stock-adjusted.js"
+    "kempo-inventory:quantity:adjusted": "./hooks/quantity-adjusted.js"
   }
 }</code></pre>
     <pre><code class="language-js">// install.js
@@ -26,7 +26,7 @@ export default async () => { await unregisterFields('kempo-inventory-reorder'); 
     <p><code>registerFields</code> is idempotent, so it is safe to call again on update. It refuses to take a key another owner holds, or to change an existing field's type. Kempo stops a dependency being uninstalled while something that depends on it is enabled.</p>
 
     <h2 id="sdk" class="mt">Server SDK</h2>
-    <pre><code class="language-js">import { getItems, createItem, adjustStock, registerFields } from 'kempo-inventory/sdk';</code></pre>
+    <pre><code class="language-js">import { getItems, createItem, adjustQuantity, registerFields } from 'kempo-inventory/sdk';</code></pre>
     <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
     <div class="table-wrapper mb">
       <table>
@@ -38,10 +38,10 @@ export default async () => { await unregisterFields('kempo-inventory-reorder'); 
           <tr><td><code>createItem({ sku, name, description, quantity, fields, userId }, { owner })</code></td><td>Create. <code>owner</code> makes it your extension's</td></tr>
           <tr><td><code>updateItem(id, { sku, name, description, fields, userId }, { owner })</code></td><td>Update. <code>fields</code> is merged, and an empty value clears a field. SKU, name and category of an owned item need its <code>owner</code></td></tr>
           <tr><td><code>deleteItem(id, { userId, owner })</code></td><td>Delete an item and its history (owned items need their <code>owner</code>)</td></tr>
-          <tr><td><code>adjustStock(id, { delta, reason, note, userId })</code></td><td>The way quantity changes, for anyone. Atomic, and refuses to go below zero</td></tr>
-          <tr><td><code>adjustStockMany(changes, { reason, note, ref, userId, owner })</code></td><td>Several stock changes together: every one happens or none does. See <a href="#adjust-many">below</a></td></tr>
+          <tr><td><code>adjustQuantity(id, { delta, reason, note, userId })</code></td><td>The way quantity changes, for anyone. Atomic, and refuses to go below zero</td></tr>
+          <tr><td><code>adjustQuantityMany(changes, { reason, note, ref, userId, owner })</code></td><td>Several quantity changes together: every one happens or none does. See <a href="#adjust-many">below</a></td></tr>
           <tr><td><code>unregisterItems(owner, { release })</code></td><td>Delete every item you own, or with <code>release</code> hand them back to people</td></tr>
-          <tr><td><code>getMovements({ itemId, limit, offset })</code></td><td>Stock history</td></tr>
+          <tr><td><code>getMovements({ itemId, limit, offset })</code></td><td>Quantity history</td></tr>
           <tr><td><code>getFields({ category, owner })</code>, <code>getField(key, category)</code></td><td>Read field definitions. <code>getFields()</code> is every field (each with its <code>category</code> key and <code>categoryName</code>). With <code>category</code> it is what an item in that category shows</td></tr>
           <tr><td><code>createField(definition)</code>, <code>updateField(key, changes)</code>, <code>deleteField(key)</code></td><td>Manage user-defined fields</td></tr>
           <tr><td><code>getCategories({ includeEmpty, owner })</code>, <code>saveCategory(name, { newName, image, description, tags }, { owner })</code>, <code>deleteCategory(name, { owner })</code></td><td>The categories, and managing them</td></tr>
@@ -63,7 +63,7 @@ export default async () => { await unregisterFields('kempo-inventory-reorder'); 
         <tbody>
           <tr><td><strong>Field</strong></td><td>Delete it, change its key, type (within the safe conversions), requirement or options</td><td>Rename it, change its description, list and suggest settings and position</td></tr>
           <tr><td><strong>Category</strong></td><td>Rename it (which rewrites its items), merge into or out of it, delete it</td><td>Change its image, description and tags, and put items in it</td></tr>
-          <tr><td><strong>Item</strong></td><td>Change its SKU, name and category, delete it</td><td>Edit description, tags and custom field values, and <strong>adjust stock</strong></td></tr>
+          <tr><td><strong>Item</strong></td><td>Change its SKU, name and category, delete it</td><td>Edit description, tags and custom field values, and <strong>adjust quantity</strong></td></tr>
         </tbody>
       </table>
     </div>
@@ -93,15 +93,15 @@ export default async () => {
     <p>To protect more than this (say, the <em>values</em> of a field you own), subscribe to the <a href="#hooks"><code>before_*</code> hooks</a>. Every payload carries <code>actor</code>, the extension making the change or <code>''</code> for a person.</p>
 
     <h2 id="adjust-many" class="mt">Several items at once</h2>
-    <p><code>adjustStock</code> changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. <code>adjustStockMany</code> applies the whole set together:</p>
-    <pre><code class="language-js">import { adjustStockMany } from 'kempo-inventory/sdk';
+    <p><code>adjustQuantity</code> changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. <code>adjustQuantityMany</code> applies the whole set together:</p>
+    <pre><code class="language-js">import { adjustQuantityMany } from 'kempo-inventory/sdk';
 
-const [error, { items }] = await adjustStockMany(
+const [error, { items }] = await adjustQuantityMany(
   [{ id: resin.id, delta: -175 }, { id: paint.id, delta: -20 }],
   { reason: 'sale', ref: 'order-1042', owner: 'my-extension' },
 );
-// error.code 409 and error.msg "Insufficient stock of Paint (ml)": nothing changed</code></pre>
-    <p>Changes to the same item are added together, and one that nets to nothing is left out. Every item goes through the same <code>before_adjust</code> guard as <code>adjustStock</code>, and each fires <code>stock:adjusted</code> once everything is committed. <code>ref</code> is written on every stock movement (as <code>[order-1042]</code> in its note) so the change can be found, and reversed, later.</p>
+// error.code 409 and error.msg "Insufficient quantity of Paint (ml)": nothing changed</code></pre>
+    <p>Changes to the same item are added together, and one that nets to nothing is left out. Every item goes through the same <code>before_adjust</code> guard as <code>adjustQuantity</code>, and each fires <code>quantity:adjusted</code> once everything is committed. <code>ref</code> is written on every quantity movement (as <code>[order-1042]</code> in its note) so the change can be found, and reversed, later.</p>
 
     <h2 id="hooks" class="mt">Hooks</h2>
     <p>Declare these in your <code>kempo-config.json</code> <code>hooks</code>. Every payload also carries <code>actor</code>: the extension that made the change through the SDK, or <code>''</code> for a person using the admin.</p>
@@ -114,7 +114,7 @@ const [error, { items }] = await adjustStockMany(
           <tr><td><code>kempo-inventory:item:before_create</code></td><td><code>{ draft: { sku, name, description, quantity, fields }, userId }</code></td><td>edit <code>draft</code></td></tr>
           <tr><td><code>kempo-inventory:item:before_update</code></td><td><code>{ item, changes: { sku?, name?, description?, fields? }, userId }</code></td><td>edit <code>changes</code></td></tr>
           <tr><td><code>kempo-inventory:item:before_delete</code></td><td><code>{ item, userId }</code></td><td>refuse only</td></tr>
-          <tr><td><code>kempo-inventory:stock:before_adjust</code></td><td><code>{ item, draft: { delta, reason, note }, userId }</code></td><td>edit <code>draft</code></td></tr>
+          <tr><td><code>kempo-inventory:quantity:before_adjust</code></td><td><code>{ item, draft: { delta, reason, note }, userId }</code></td><td>edit <code>draft</code></td></tr>
           <tr><td><code>kempo-inventory:category:before_update</code></td><td><code>{ name, newName, changes: { description?, tags?, image? }, userId }</code></td><td>refuse only</td></tr>
           <tr><td><code>kempo-inventory:category:before_delete</code></td><td><code>{ category, name, userId }</code> (<code>category</code> is <code>null</code> for one with no record)</td><td>refuse only</td></tr>
           <tr><td><code>kempo-inventory:field:before_create</code></td><td><code>{ draft }</code></td><td>refuse only</td></tr>
@@ -133,7 +133,7 @@ const [error, { items }] = await adjustStockMany(
           <tr><td><code>kempo-inventory:item:created</code></td><td><code>{ item, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:item:updated</code></td><td><code>{ item, previous, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:item:deleted</code></td><td><code>{ item, userId }</code></td></tr>
-          <tr><td><code>kempo-inventory:stock:adjusted</code></td><td><code>{ item, previousQuantity, delta, reason, note, movement, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:quantity:adjusted</code></td><td><code>{ item, previousQuantity, delta, reason, note, movement, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:category:updated</code></td><td><code>{ category, previous, moved, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:category:deleted</code></td><td><code>{ category, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:field:created</code></td><td><code>{ field }</code></td></tr>
@@ -143,7 +143,7 @@ const [error, { items }] = await adjustStockMany(
       </table>
     </div>
     <p>For example, a low-stock check that reacts to every adjustment:</p>
-    <pre><code class="language-js">// hooks/stock-adjusted.js
+    <pre><code class="language-js">// hooks/quantity-adjusted.js
 export default async ({ item }) => {
   const level = item.fields.reorderLevel;
   if(level !== undefined &amp;&amp; item.quantity &lt;= level){

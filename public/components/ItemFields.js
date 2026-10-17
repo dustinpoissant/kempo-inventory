@@ -201,7 +201,7 @@ export class InventoryMediaField extends LitElement {
   }
 }
 
-if(!customElements.get('inventory-media-field')) customElements.define('inventory-media-field', InventoryMediaField);
+if(!customElements.get('k-inventory-media-field')) customElements.define('k-inventory-media-field', InventoryMediaField);
 
 /*
   A colour field's control. Colour is optional, so with nothing chosen it offers a button, because a
@@ -312,7 +312,7 @@ class InventoryColorField extends LitElement {
   }
 }
 
-if(!customElements.get('inventory-color-field')) customElements.define('inventory-color-field', InventoryColorField);
+if(!customElements.get('k-inventory-color-field')) customElements.define('k-inventory-color-field', InventoryColorField);
 
 const searchItems = async (event, ownId) => {
   const $combobox = event.currentTarget;
@@ -361,7 +361,7 @@ export const fieldTemplate = (field, value, { linked = {}, media = {}, ownId = n
       control = html`<input type="date" id=${id} class="full" .value=${value ?? ''}>`;
       break;
     case 'color':
-      control = html`<inventory-color-field id=${id} .value=${value ?? ''}></inventory-color-field>`;
+      control = html`<k-inventory-color-field id=${id} .value=${value ?? ''}></k-inventory-color-field>`;
       break;
     case 'rating':
       control = html`<div class="d-f" style="align-items: center; gap: var(--spacer_h);">
@@ -385,7 +385,7 @@ export const fieldTemplate = (field, value, { linked = {}, media = {}, ownId = n
         @select=${e => { e.currentTarget.dataset.itemId = e.detail.value; e.currentTarget.dataset.label = e.detail.label; }}></k-combobox>`;
       break;
     case 'media':
-      control = html`<inventory-media-field id=${id} .value=${value ?? []} .assets=${media} .cropRatio=${field.imageRatio ?? ''} .cropMax=${field.imageMax ?? 0}></inventory-media-field>`;
+      control = html`<k-inventory-media-field id=${id} .value=${value ?? []} .assets=${media} .cropRatio=${field.imageRatio ?? ''} .cropMax=${field.imageMax ?? 0}></k-inventory-media-field>`;
       break;
     default:
       control = field.type === 'text' && field.suggest

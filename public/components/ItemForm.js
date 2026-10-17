@@ -93,7 +93,7 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
   };
 
   render(html`
-    ${locked ? html`<p class="mb tc-muted">Managed by the ${item.owner} extension. Its SKU, name and category can only be changed there; everything else, including stock, you can edit here.</p>` : ''}
+    ${locked ? html`<p class="mb tc-muted">Managed by the ${item.owner} extension. Its SKU, name and category can only be changed there; everything else, including quantity, you can edit here.</p>` : ''}
     <div class="d-f mb" style="gap: var(--spacer);">
       <div class="flex">
         <label class="d-b mb-sm" for="dlg-sku">SKU *</label>

@@ -3,8 +3,8 @@
     <h2 id="who-reads">Who can read the inventory</h2>
     <p>Reading the inventory needs the <code>items:read</code> permission. Turn on the <code>public_read</code> setting (off by default) and <strong>anyone can read it, signed in or not</strong>, so it can be shared as a catalogue. Public reading covers items, categories and fields, and their photos. Writing always needs the matching permission.</p>
 
-    <h2 id="stock-counts" class="mt">Who sees stock counts</h2>
-    <p><strong>Stock counts are only for people who manage stock.</strong> A caller without <code>stock:adjust</code> or <code>items:update</code> gets items <strong>without a quantity</strong>, and no stock history. That covers a signed-out visitor, someone signed in with only <code>items:read</code>, and public reading. People who manage stock get everything.</p>
+    <h2 id="quantity-counts" class="mt">Who sees quantity counts</h2>
+    <p><strong>Quantity counts are only for people who manage quantity.</strong> A caller without <code>quantity:adjust</code> or <code>items:update</code> gets items <strong>without a quantity</strong>, and no stock history. That covers a signed-out visitor, someone signed in with only <code>items:read</code>, and public reading. People who manage quantity get everything.</p>
 
     <h2 id="photos" class="mt">Photos and files</h2>
     <p>Photos and files are optional. Three other extensions can take part. Inventory never loads any of them up front, each is detected when it is needed, and with none installed nothing else changes: the "Photos / files" field kind is simply not offered.</p>

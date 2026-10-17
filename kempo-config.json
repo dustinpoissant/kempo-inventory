@@ -5,12 +5,12 @@
   "schema": "./server/db/schema.js",
   "widgets": [
     {
-      "key": "stock",
+      "key": "quantity",
       "title": "Inventory",
-      "description": "Item and unit counts, what is out of stock and the latest stock movements.",
-      "icon": "archive",
-      "element": "k-inv-widget",
-      "module": "/inventory/components/StockWidget.js",
+      "description": "Item and unit counts, what is out of stock and the latest quantity movements.",
+      "iconSrc": "/admin/extension/kempo-inventory/icons/inventory.svg",
+      "element": "k-inventory-widget",
+      "module": "/inventory/components/QuantityWidget.js",
       "defaultWidth": 2,
       "defaultHeight": 2,
       "minWidth": 1,
@@ -22,7 +22,7 @@
   "permissions": [
     {
       "name": "kempo-inventory:items:read",
-      "description": "View inventory items, fields and stock movements"
+      "description": "View inventory items, fields and quantity movements"
     },
     {
       "name": "kempo-inventory:items:create",
@@ -37,8 +37,8 @@
       "description": "Delete inventory items"
     },
     {
-      "name": "kempo-inventory:stock:adjust",
-      "description": "Add or remove stock on inventory items"
+      "name": "kempo-inventory:quantity:adjust",
+      "description": "Add or remove quantity on inventory items"
     },
     {
       "name": "kempo-inventory:fields:manage",
@@ -56,26 +56,26 @@
     },
     {
       "name": "kempo-inventory:manager",
-      "description": "Can view and manage items and stock levels",
+      "description": "Can view and manage items and quantity levels",
       "permissions": [
         "system:admin:access",
         "kempo-inventory:items:read",
         "kempo-inventory:items:create",
         "kempo-inventory:items:update",
         "kempo-inventory:items:delete",
-        "kempo-inventory:stock:adjust"
+        "kempo-inventory:quantity:adjust"
       ]
     },
     {
       "name": "kempo-inventory:admin",
-      "description": "Can manage items and stock levels, and set up the custom fields items have",
+      "description": "Can manage items and quantity levels, and set up the custom fields items have",
       "permissions": [
         "system:admin:access",
         "kempo-inventory:items:read",
         "kempo-inventory:items:create",
         "kempo-inventory:items:update",
         "kempo-inventory:items:delete",
-        "kempo-inventory:stock:adjust",
+        "kempo-inventory:quantity:adjust",
         "kempo-inventory:fields:manage"
       ]
     }
@@ -91,7 +91,7 @@
       "name": "public_read",
       "value": false,
       "type": "boolean",
-      "description": "Let anyone, signed in or not, browse the inventory (items, categories, photos). They never see stock counts. Off by default: reading otherwise needs the items:read permission."
+      "description": "Let anyone, signed in or not, browse the inventory (items, categories, photos). They never see quantity counts. Off by default: reading otherwise needs the items:read permission."
     },
     {
       "name": "public_photos",

@@ -40,14 +40,14 @@ locked: true
       <kc-tc-field-sort-hide></kc-tc-field-sort-hide>
       <div class="flex"></div>
       <k-permission has="kempo-inventory:fields:manage">
-        <button id="importBtn" class="btn m0"><k-icon name="arrow" direction="up"></k-icon> Import</button>
+        <button id="importBtn" class="btn m0"><k-icon name="download" rotation="180"></k-icon> Import</button>
       </k-permission>
       <k-permission has="kempo-inventory:fields:manage">
         <button id="exportBtn" class="btn m0"><k-icon name="download"></k-icon> Export</button>
       </k-permission>
       <a href="/admin/extension/kempo-inventory/categories" class="btn"><k-icon name="folder"></k-icon> Categories</a>
       <k-permission has="kempo-inventory:fields:manage">
-        <a href="/admin/extension/kempo-inventory/fields" class="btn"><k-icon name="settings"></k-icon> Fields</a>
+        <a href="/admin/extension/kempo-inventory/fields" class="btn"><k-icon name="fields"></k-icon> Fields</a>
       </k-permission>
       <k-permission has="kempo-inventory:items:create">
         <button id="newItemBtn" class="primary m0"><k-icon name="add"></k-icon> New Item</button>
@@ -91,8 +91,8 @@ locked: true
       for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
       $table.appendChild($control);
     };
-    if(can('items:update')) addControl('inventory-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
-    if(can('stock:adjust')) addControl('inventory-row-action', 'before', { action: 'adjust', icon: 'repeat', title: 'Adjust stock' });
+    if(can('items:update')) addControl('k-inventory-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    if(can('quantity:adjust')) addControl('k-inventory-row-action', 'before', { action: 'adjust', icon: 'repeat', title: 'Adjust quantity' });
     if(can('items:delete')){
       $table.setAttribute('request-delete', '');
       addControl('kc-tc-delete-record', 'after');
@@ -105,15 +105,13 @@ locked: true
     let fields = [];
     /* The Managed by column only appears once an extension owns an item. */
     let owners = false;
-    /* The Held column only appears once something is set aside. */
-    let holds = false;
 
     /*
       Display-only values are precomputed as plain strings so the table never formats
       user-supplied text itself.
     */
     const decorate = (item, ctx) => {
-      const record = { ...item, qtyText: String(item.quantity), heldText: String(item.held ?? 0), tagsText: item.tags.join(', '), ownerText: item.owner };
+      const record = { ...item, qtyText: String(item.quantity), tagsText: item.tags.join(', '), ownerText: item.owner };
       /* Only the fields that apply to this item's category; a column another category's items fill stays blank here. */
       for(const field of applicableFields(fields, item.category).filter(f => f.listed)) record[`f_${field.key}`] = displayValue(field, item.fields[field.key], ctx);
       return record;
@@ -124,7 +122,6 @@ locked: true
       { name: 'name', label: 'Name', size: 240, editable: false },
       { name: 'category', label: 'Category', size: 140, editable: false },
       { name: 'qtyText', label: 'Quantity', size: 100, editable: false },
-      ...(holds ? [{ name: 'heldText', label: 'On hold', size: 100, editable: false }] : []),
       { name: 'tagsText', label: 'Tags', size: 160, editable: false },
       ...(owners ? [{ name: 'ownerText', label: 'Managed by', size: 170, editable: false }] : []),
       /* One column per key: a key two categories both use is one column. */
@@ -154,7 +151,6 @@ locked: true
         return;
       }
       owners = data.items.some(i => i.owner);
-      holds = data.items.some(i => i.held > 0);
       $table.setData({ records: data.items.map(i => decorate(i, data.context)), fields: columns() });
     };
 
@@ -174,7 +170,7 @@ locked: true
         Toast.error(`"${record.name}" is managed by the ${record.owner} extension and cannot be deleted here`);
         return;
       }
-      Dialog.confirm(`Delete "${record.name}" and its stock history? This action cannot be undone.`, async confirmed => {
+      Dialog.confirm(`Delete "${record.name}" and its quantity history? This action cannot be undone.`, async confirmed => {
         if(!confirmed){ reject(); return; }
         const [error] = await deleteItem(record.id);
         if(error){

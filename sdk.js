@@ -13,7 +13,7 @@
     };
 
   Fields, categories and items can all be owned. Pass your extension name as `owner` and only you can
-  delete them or change the parts that define them; people keep editing everything else (stock
+  delete them or change the parts that define them; people keep editing everything else (quantity
   included) in the admin. Owner is never read from an HTTP request, only from these server calls:
 
     registerCategory(owner, { name, description })       registerField(owner, { ..., category })
@@ -31,12 +31,11 @@ export {
   updateItem,
   deleteItem,
   unregisterItems,
-  adjustStock,
-  adjustStockMany,
+  adjustQuantity,
+  adjustQuantityMany,
   getMovements,
 } from './server/utils/items.js';
 
-export { holdStock, releaseStock, consumeHeld } from './server/utils/holds.js';
 
 export {
   getFields,

@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>On your own site - Kempo Inventory</title>
-  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <meta name="description" content="An inventory system for kempo cms: items, quantity with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
   <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
@@ -66,10 +66,10 @@
         <a href="./#quick-start" class="d-b">Quick start</a>
         <a href="./#works-with" class="d-b">Works with</a>
       </div>
-      <h5><a href="./items.html">Items and stock</a></h5>
+      <h5><a href="./items.html">Items and quantity</a></h5>
       <div class="ml mb -mt">
         <a href="./items.html#items" class="d-b">Items</a>
-        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#adjusting" class="d-b">Changing quantity</a>
         <a href="./items.html#tags" class="d-b">Tags</a>
         <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
       </div>
@@ -89,7 +89,7 @@
       <h5><a href="./access.html">Photos and access</a></h5>
       <div class="ml mb -mt">
         <a href="./access.html#who-reads" class="d-b">Who can read</a>
-        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#quantity-counts" class="d-b">Who sees quantity</a>
         <a href="./access.html#photos" class="d-b">Photos and files</a>
         <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
       </div>
@@ -140,17 +140,17 @@
   <main>
     <h1>On your own site</h1>
     
-    <p>This extension ships the data, the API, and an admin screen for managing them. A site that wants its own screens (a dashboard, a stock page, a storefront) builds them itself, and can reuse the same browser modules the admin uses.</p>
+    <p>This extension ships the data, the API, and an admin screen for managing them. A site that wants its own screens (a dashboard, a quantity page, a storefront) builds them itself, and can reuse the same browser modules the admin uses.</p>
 
     <h2 id="browser-sdk">The browser SDK</h2>
     <p>The API client is at <code>/inventory/sdk.js</code>. Every call resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getItems, getFields, adjustStock } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/sdk.js&#x27;</span>;
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getItems, getFields, adjustQuantity } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;/inventory/sdk.js&#x27;</span>;
 
 <span class="hljs-keyword">const</span> [error, data] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getItems</span>({ <span class="hljs-attr">q</span>: <span class="hljs-string">&#x27;paint&#x27;</span>, <span class="hljs-attr">limit</span>: <span class="hljs-number">20</span> });
 <span class="hljs-comment">// data.items, data.total, data.linked (item links), data.media (photos)</span>
 
-<span class="hljs-keyword">await</span> <span class="hljs-title function_">adjustStock</span>(itemId, { <span class="hljs-attr">delta</span>: -<span class="hljs-number">5</span>, <span class="hljs-attr">reason</span>: <span class="hljs-string">&#x27;sold&#x27;</span>, <span class="hljs-attr">note</span>: <span class="hljs-string">&#x27;Order 1042&#x27;</span> });</code></pre>
-    <p>Whoever is calling needs the matching permission, or the <code>public_read</code> setting must be on. Stock counts only come back for people who manage stock. See <a href="./access.html#stock-counts">who sees stock counts</a>.</p>
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">adjustQuantity</span>(itemId, { <span class="hljs-attr">delta</span>: -<span class="hljs-number">5</span>, <span class="hljs-attr">reason</span>: <span class="hljs-string">&#x27;sold&#x27;</span>, <span class="hljs-attr">note</span>: <span class="hljs-string">&#x27;Order 1042&#x27;</span> });</code></pre>
+    <p>Whoever is calling needs the matching permission, or the <code>public_read</code> setting must be on. Quantity counts only come back for people who manage quantity. See <a href="./access.html#quantity-counts">who sees quantity counts</a>.</p>
 
     <h2 id="dialogs" class="mt">Forms and dialogs</h2>
     <p>The item form builds itself from the field list, so custom fields, item links and photo uploads work without any code of your own.</p>
@@ -159,7 +159,7 @@
 <span class="hljs-title function_">openItemDialog</span>({ item, fields, <span class="hljs-attr">onSaved</span>: <span class="hljs-function"><span class="hljs-params">item</span> =&gt;</span> <span class="hljs-title function_">reload</span>() });                    <span class="hljs-comment">// edit an item</span>
 <span class="hljs-title function_">openItemDialog</span>({ fields, <span class="hljs-attr">defaults</span>: { <span class="hljs-attr">category</span>: <span class="hljs-string">&#x27;Paint&#x27;</span> }, onSaved });           <span class="hljs-comment">// a new item, with a category filled in</span>
 <span class="hljs-title function_">openItemDialog</span>({ fields, <span class="hljs-attr">askQuantity</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">defaults</span>: { <span class="hljs-attr">quantity</span>: <span class="hljs-number">1</span> }, onSaved });
-<span class="hljs-title function_">openAdjustDialog</span>({ item, <span class="hljs-attr">onSaved</span>: <span class="hljs-function"><span class="hljs-params">item</span> =&gt;</span> <span class="hljs-title function_">reload</span>() });                          <span class="hljs-comment">// add or remove stock</span></code></pre>
+<span class="hljs-title function_">openAdjustDialog</span>({ item, <span class="hljs-attr">onSaved</span>: <span class="hljs-function"><span class="hljs-params">item</span> =&gt;</span> <span class="hljs-title function_">reload</span>() });                          <span class="hljs-comment">// add or remove quantity</span></code></pre>
     <p><code>fields</code> is the full list from <code>getFields()</code>. The form shows the default fields plus those of the item's category, and swaps them as the category changes. If you want your own layout, <code>fieldTemplate</code> and <code>readField</code> (from <code>ItemFields.js</code>) render and read a single field's input, and <code>displayValue</code> gives a plain-text version that is safe to put in a table cell.</p>
 
     <h2 id="pages" class="mt">Adding and editing items</h2>

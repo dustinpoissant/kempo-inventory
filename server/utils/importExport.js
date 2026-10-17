@@ -2,7 +2,7 @@ import db from 'kempo/server/db/index.js';
 import { asc } from 'drizzle-orm';
 import { kempoInventoryItem, kempoInventoryCategory } from '../db/schema.js';
 import { getFields } from './fields.js';
-import { getItemBySku, createItem, updateItem, adjustStock } from './items.js';
+import { getItemBySku, createItem, updateItem, adjustQuantity } from './items.js';
 import { getCategories, saveCategory } from './categories.js';
 import { applicableFields, coerceValues } from './fieldTypes.js';
 import { normalizeTags } from './tags.js';
@@ -111,13 +111,13 @@ const given = value => value !== undefined && value !== null && value !== '' && 
 
     onMatch  'skip'    an item or category that already exists (same SKU / same name) is left alone
              'update'  it is updated with the values the file provides; a value the file leaves empty
-                       is never cleared. A changed quantity is applied as a stock adjustment, so the
+                       is never cleared. A changed quantity is applied as a quantity adjustment, so the
                        history shows it.
 
   Rows are independent: one that fails does not stop the others. Resolves to
   [null, { results, categoryResults, summary }].
 */
-export const importData = async ({ items = [], categories = [], onMatch = 'skip', dryRun = false } = {}, { userId = '', canUpdate = false, canAdjustStock = false, maxRows = MAX_IMPORT_ROWS } = {}) => {
+export const importData = async ({ items = [], categories = [], onMatch = 'skip', dryRun = false } = {}, { userId = '', canUpdate = false, canAdjustQuantity = false, maxRows = MAX_IMPORT_ROWS } = {}) => {
   if(!['skip', 'update'].includes(onMatch)) return [{ code: 400, msg: 'onMatch must be "skip" or "update"' }, null];
   if(!Array.isArray(items) || !Array.isArray(categories)) return [{ code: 400, msg: 'items and categories must be lists' }, null];
   if(items.length > maxRows || categories.length > maxRows) return [{ code: 413, msg: `Send at most ${maxRows} rows at a time` }, null];
@@ -199,7 +199,7 @@ export const importData = async ({ items = [], categories = [], onMatch = 'skip'
     if(invalid){ fail(result, invalid.msg); continue; }
 
     if(existing){
-      if(quantity !== undefined && quantity !== existing.quantity && !canAdjustStock){ fail(result, 'Changing a quantity needs the stock:adjust permission'); continue; }
+      if(quantity !== undefined && quantity !== existing.quantity && !canAdjustQuantity){ fail(result, 'Changing a quantity needs the quantity:adjust permission'); continue; }
       result.action = 'update';
       if(dryRun){ summary.updated++; continue; }
       const changes = { fields: coerced };
@@ -210,7 +210,7 @@ export const importData = async ({ items = [], categories = [], onMatch = 'skip'
       const [error] = await updateItem(existing.id, { ...changes, userId });
       if(error && !(error.code === 400 && error.msg === 'No changes provided')){ fail(result, error.msg); continue; }
       if(quantity !== undefined && quantity !== existing.quantity){
-        const [adjustError] = await adjustStock(existing.id, { delta: quantity - existing.quantity, reason: 'import', note: 'Imported', userId });
+        const [adjustError] = await adjustQuantity(existing.id, { delta: quantity - existing.quantity, reason: 'import', note: 'Imported', userId });
         if(adjustError){ fail(result, adjustError.msg); continue; }
       }
       summary.updated++;

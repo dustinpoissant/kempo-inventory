@@ -4,8 +4,19 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+### Removed (breaking)
+
+- **Held quantity is gone.** An item has one quantity again. `holdQuantity`, `releaseQuantity`, `consumeHeld`, the `kempo-inventory:quantity:before_hold` and `kempo-inventory:quantity:held` events, the `held` figure on an item, the "On hold" column and the refusal to delete an item with quantity on hold are removed. A hold belongs to whoever sells: kempo-products' ledger records the stock an order takes, and kempo-products-inventory takes the materials from here when it does and returns them when it is undone. Existing databases keep their `held`, `heldDelta` and `heldAfter` columns, which nothing reads or writes any more.
+
+### Added
+
+- **A "Category" link in the Products menu group**, straight to the categories page (priority 88, between Products and Inventory).
+
 ### Changed
 
+- Its menu entry is in the **Products** group, after Products (priority 87), instead of Commerce.
+- **Custom elements are renamed to `k-inventory-<name>`**, the extension's name after `k-`; the old tag names stop working: `inventory-media-field` is `k-inventory-media-field`, `inventory-color-field` is `k-inventory-color-field`, `inventory-row-action` is `k-inventory-row-action`, `k-inv-widget` is `k-inventory-widget`.
+- **"Stock" is now "quantity", everywhere**, so an item, a product and a cart line all say the same word. `adjustStock` and `adjustStockMany` are `adjustQuantity` and `adjustQuantityMany`; the `kempo-inventory:stock:adjusted` and `before_adjust` events are `kempo-inventory:quantity:...`; the `kempo-inventory:stock:adjust` permission is `kempo-inventory:quantity:adjust` (`update.js` moves every group's grant to the new name, so nobody loses the right); the dashboard widget key is `quantity`. The `quantity` column was already called that. "In stock" and "out of stock" remain as the plain English they are. Anything that listens for the old events or calls the old functions has to change, and extensions that listen declare the new names in their `kempo-config.json`.
 - **New uploads go to kempo-media whenever it is installed, and the `media_provider` setting is gone.** kempo-media now sits on kempo-files and gets its thumbnails from kempo-thumbs, so the choice between "kempo-media with its own thumbnails" and "kempo-files with kempo-thumbs" no longer exists: one upload gives a stored file and its thumbnail either way. A site with only kempo-files still uploads there directly. `update.js` removes the retired setting.
 - **`public_photos` now covers kempo-media uploads too** (it used to apply only to kempo-files), so turning it off keeps new photos behind `files:download` whichever library takes them.
 - **Reading is unchanged.** Stored values still say where they live (a bare id is a kempo-media asset, `files:<id>` a kempo-files file), so everything written before keeps resolving. An export of a kempo-media photo now reads its bytes through kempo-files.
@@ -13,7 +24,6 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ### Added
 
-- **Held stock.** An item has `quantity` (what is available) and `held` (what is set aside for something unfinished, such as an order awaiting payment). `holdStock`, `releaseStock` and `consumeHeld` move stock available → held, held → available and held → gone, all or nothing across several items, each recorded as a movement with `heldDelta` and `heldAfter`. Holding and releasing also fire `stock:adjusted`, so everything that reacts to availability stays correct; new `stock:before_hold` and `stock:held` hooks. An item with stock on hold cannot be deleted. `update.js` adds the columns.
 - The test scripts run files one at a time: they share and empty one database, which two files at once corrupted.
 - **Dashboard widget.** A **Inventory** widget on the kempo admin dashboard showing item, unit and out-of-stock counts and the latest stock movements, with a **New item** button, declared in `widgets` in `kempo-config.json`. Needs a kempo with the dashboard; ignored on older versions.
 - A **documentation site** (`docs-src/` built into `docs/` for GitHub Pages) with screenshots of the admin.

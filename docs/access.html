@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Photos and access - Kempo Inventory</title>
-  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <meta name="description" content="An inventory system for kempo cms: items, quantity with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
   <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
@@ -66,10 +66,10 @@
         <a href="./#quick-start" class="d-b">Quick start</a>
         <a href="./#works-with" class="d-b">Works with</a>
       </div>
-      <h5><a href="./items.html">Items and stock</a></h5>
+      <h5><a href="./items.html">Items and quantity</a></h5>
       <div class="ml mb -mt">
         <a href="./items.html#items" class="d-b">Items</a>
-        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#adjusting" class="d-b">Changing quantity</a>
         <a href="./items.html#tags" class="d-b">Tags</a>
         <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
       </div>
@@ -89,7 +89,7 @@
       <h5><a href="./access.html">Photos and access</a></h5>
       <div class="ml mb -mt">
         <a href="./access.html#who-reads" class="d-b">Who can read</a>
-        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#quantity-counts" class="d-b">Who sees quantity</a>
         <a href="./access.html#photos" class="d-b">Photos and files</a>
         <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
       </div>
@@ -143,8 +143,8 @@
     <h2 id="who-reads">Who can read the inventory</h2>
     <p>Reading the inventory needs the <code>items:read</code> permission. Turn on the <code>public_read</code> setting (off by default) and <strong>anyone can read it, signed in or not</strong>, so it can be shared as a catalogue. Public reading covers items, categories and fields, and their photos. Writing always needs the matching permission.</p>
 
-    <h2 id="stock-counts" class="mt">Who sees stock counts</h2>
-    <p><strong>Stock counts are only for people who manage stock.</strong> A caller without <code>stock:adjust</code> or <code>items:update</code> gets items <strong>without a quantity</strong>, and no stock history. That covers a signed-out visitor, someone signed in with only <code>items:read</code>, and public reading. People who manage stock get everything.</p>
+    <h2 id="quantity-counts" class="mt">Who sees quantity counts</h2>
+    <p><strong>Quantity counts are only for people who manage quantity.</strong> A caller without <code>quantity:adjust</code> or <code>items:update</code> gets items <strong>without a quantity</strong>, and no stock history. That covers a signed-out visitor, someone signed in with only <code>items:read</code>, and public reading. People who manage quantity get everything.</p>
 
     <h2 id="photos" class="mt">Photos and files</h2>
     <p>Photos and files are optional. Three other extensions can take part. Inventory never loads any of them up front, each is detected when it is needed, and with none installed nothing else changes: the "Photos / files" field kind is simply not offered.</p>

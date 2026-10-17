@@ -4,10 +4,10 @@ import { getItems, getMovements } from '/inventory/sdk.js';
 const stat = (value, label, classes = '') => html`<div class="flex"><div class="h2 m0 ${classes}">${value}</div><div class="small tc-muted">${label}</div></div>`;
 
 /*
-  Stock at a glance. Unit and out-of-stock figures are shown only when the page fetched holds every
+  Quantity at a glance. Unit and out-of-stock figures are shown only when the page fetched holds every
   item, so they are never an under-count.
 */
-export default class StockWidget extends DashboardWidget {
+export default class QuantityWidget extends DashboardWidget {
   static properties = {
     ...DashboardWidget.properties,
     total: { state: true },
@@ -68,4 +68,4 @@ export default class StockWidget extends DashboardWidget {
   }
 }
 
-customElements.define('k-inv-widget', StockWidget);
+customElements.define('k-inventory-widget', QuantityWidget);

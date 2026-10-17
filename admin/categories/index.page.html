@@ -63,7 +63,7 @@ locked: true
     const [, permData] = await getAllCurrentUserPermissions();
     const canEdit = new Set(permData?.permissions ?? []).has('kempo-inventory:items:update');
 
-    const manageFields = document.createElement('inventory-row-action');
+    const manageFields = document.createElement('k-inventory-row-action');
     manageFields.setAttribute('slot', 'before');
     manageFields.setAttribute('action', 'fields');
     manageFields.setAttribute('icon', 'settings');
@@ -71,7 +71,7 @@ locked: true
     $table.appendChild(manageFields);
 
     if(canEdit){
-      const edit = document.createElement('inventory-row-action');
+      const edit = document.createElement('k-inventory-row-action');
       edit.setAttribute('slot', 'before');
       edit.setAttribute('action', 'edit');
       edit.setAttribute('icon', 'edit');
@@ -142,7 +142,7 @@ locked: true
           </div>
           <div class="mb">
             <label class="d-b mb-sm">Image</label>
-            <inventory-media-field id="cat-image" ratio-for="category" .max=${1} .value=${category?.image ? [category.image.id] : []} .assets=${category?.image ? { [category.image.id]: category.image } : {}}></inventory-media-field>
+            <k-inventory-media-field id="cat-image" ratio-for="category" .max=${1} .value=${category?.image ? [category.image.id] : []} .assets=${category?.image ? { [category.image.id]: category.image } : {}}></k-inventory-media-field>
           </div>
         </div>
       `, {

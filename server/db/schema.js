@@ -10,8 +10,7 @@ export const kempoInventoryItem = pgTable('kempoInventoryItem', {
   name: text('name').notNull(),
   description: text('description').notNull().default(''),
   category: text('category').notNull().default(''), // built in and optional; '' means uncategorised
-  quantity: integer('quantity').notNull().default(0), // what is AVAILABLE; held units are not in it
-  held: integer('held').notNull().default(0), // set aside for something unfinished (an order awaiting payment); see holds.js
+  quantity: integer('quantity').notNull().default(0),
   tags: jsonb('tags').notNull().default([]), // built in: short lower-case labels search finds
   data: jsonb('data').notNull().default({}),
   owner: text('owner').notNull().default(''), // '' for items people manage, or the extension that created it; see ownership.js
@@ -50,8 +49,6 @@ export const kempoInventoryMovement = pgTable('kempoInventoryMovement', {
   itemId: text('itemId').notNull(),
   delta: integer('delta').notNull(),
   quantityAfter: integer('quantityAfter').notNull(),
-  heldDelta: integer('heldDelta').notNull().default(0), // the change to `held`: + when stock is set aside, - when it is given back or used
-  heldAfter: integer('heldAfter').notNull().default(0),
   reason: text('reason').notNull().default('adjustment'),
   note: text('note').notNull().default(''),
   userId: text('userId').notNull().default(''),

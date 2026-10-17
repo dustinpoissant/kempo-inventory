@@ -30,7 +30,6 @@ const shape = row => row && ({
   description: row.description,
   category: row.category,
   quantity: row.quantity,
-  held: row.held ?? 0,
   tags: row.tags ?? [],
   fields: row.data ?? {},
   owner: row.owner,
@@ -230,7 +229,7 @@ export const createItem = async ({ sku, name, description = '', category = '', t
       if(qty > 0){
         await tx.insert(kempoInventoryMovement).values({
           id: newId(), itemId: created.id, delta: qty, quantityAfter: qty,
-          reason: 'initial', note: 'Initial stock', userId, created: now,
+          reason: 'initial', note: 'Initial quantity', userId, created: now,
         });
       }
       return created;
@@ -246,7 +245,7 @@ export const createItem = async ({ sku, name, description = '', category = '', t
 
 /*
   Updates sku, name, description and custom field values. Quantity is not editable here: it only
-  changes through adjustStock, which keeps the movement history honest.
+  changes through adjustQuantity, which keeps the movement history honest.
 */
 export const updateItem = async (id, { sku, name, description, category, tags, fields: values, userId = '' } = {}, { owner = '' } = {}) => {
   const [lookupError, existing] = await getItem(id);
@@ -318,7 +317,6 @@ export const deleteItem = async (id, { userId = '', owner = '' } = {}) => {
   const [lookupError, existing] = await getItem(id);
   if(lookupError) return [lookupError, null];
   if(existing.owner !== owner) return [notYours('item', existing, owner), null];
-  if(existing.held > 0) return [{ code: 409, msg: `${existing.held} of this item are on hold for something unfinished, so it cannot be deleted yet` }, null];
 
   const refused = await guard(EVENTS.itemBeforeDelete, { item: existing, userId, actor: owner });
   if(refused) return [refused, null];
@@ -341,13 +339,13 @@ export const deleteItem = async (id, { userId = '', owner = '' } = {}) => {
   Atomic: the quantity changes in a single UPDATE guarded against going negative,
   so concurrent adjustments cannot oversell.
 */
-/* Anyone may adjust stock, owned item or not; `owner` only tells hooks which extension did it. */
-export const adjustStock = async (id, { delta, reason = 'adjustment', note = '', userId = '', owner = '' } = {}) => {
+/* Anyone may adjust quantity, owned item or not; `owner` only tells hooks which extension did it. */
+export const adjustQuantity = async (id, { delta, reason = 'adjustment', note = '', userId = '', owner = '' } = {}) => {
   const [lookupError, existing] = await getItem(id);
   if(lookupError) return [lookupError, null];
 
   const draft = { delta, reason, note };
-  const refused = await guard(EVENTS.stockBeforeAdjust, { item: existing, draft, userId, actor: owner });
+  const refused = await guard(EVENTS.quantityBeforeAdjust, { item: existing, draft, userId, actor: owner });
   if(refused) return [refused, null];
 
   const change = toInt(draft.delta, NaN);
@@ -361,21 +359,21 @@ export const adjustStock = async (id, { delta, reason = 'adjustment', note = '',
         .returning();
       if(!row) return null;
       const [movement] = await tx.insert(kempoInventoryMovement).values({
-        id: newId(), itemId: id, delta: change, quantityAfter: row.quantity, heldAfter: row.held,
+        id: newId(), itemId: id, delta: change, quantityAfter: row.quantity,
         reason: String(draft.reason || 'adjustment'), note: String(draft.note || ''), userId, created: new Date(),
       }).returning();
       return { row, movement };
     });
-    if(!result) return [{ code: 409, msg: 'Insufficient stock' }, null];
+    if(!result) return [{ code: 409, msg: 'Insufficient quantity' }, null];
 
     const item = shape(result.row);
-    await notify(EVENTS.stockAdjusted, {
+    await notify(EVENTS.quantityAdjusted, {
       item, previousQuantity: item.quantity - change, delta: change,
       reason: result.movement.reason, note: result.movement.note, movement: result.movement, userId, actor: owner,
     });
     return [null, item];
   } catch {
-    return [{ code: 500, msg: 'Failed to adjust stock' }, null];
+    return [{ code: 500, msg: 'Failed to adjust quantity' }, null];
   }
 };
 
@@ -389,23 +387,23 @@ class Refusal {
 }
 
 /*
-  Applies several stock changes together: every one happens or none does. This is what makes
-  taking the materials for a whole recipe safe, where one adjustStock per item could take the resin
+  Applies several quantity changes together: every one happens or none does. This is what makes
+  taking the materials for a whole recipe safe, where one adjustQuantity per item could take the resin
   and then fail on the paint. `changes` is [{ id, delta, reason?, note? }]; changes to the same item
   are added together, and one that nets to nothing is left out. Each item runs through the same
-  before_adjust guard as adjustStock, and fires the same stock:adjusted notification once everything
+  before_adjust guard as adjustQuantity, and fires the same quantity:adjusted notification once everything
   is committed.
 
-    const [error, result] = await adjustStockMany(
+    const [error, result] = await adjustQuantityMany(
       [{ id: resin.id, delta: -175 }, { id: paint.id, delta: -20 }],
       { reason: 'sale', ref: 'order-1042', owner: 'my-extension' },
     );
 
   `ref` is recorded on every movement so the change can be found and reversed later. A refusal for
-  lack of stock is a 409 that names the item, and nothing has changed. Resolves to
+  lack of quantity is a 409 that names the item, and nothing has changed. Resolves to
   [null, { items }] with the items as they are now.
 */
-export const adjustStockMany = async (changes, { reason = 'adjustment', note = '', ref = '', userId = '', owner = '' } = {}) => {
+export const adjustQuantityMany = async (changes, { reason = 'adjustment', note = '', ref = '', userId = '', owner = '' } = {}) => {
   if(!Array.isArray(changes) || !changes.length) return [{ code: 400, msg: 'changes must be a non-empty list' }, null];
 
   const totals = new Map();
@@ -426,7 +424,7 @@ export const adjustStockMany = async (changes, { reason = 'adjustment', note = '
   try {
     rows = await db.select().from(kempoInventoryItem).where(inArray(kempoInventoryItem.id, wanted.map(entry => entry.id)));
   } catch {
-    return [{ code: 500, msg: 'Failed to adjust stock' }, null];
+    return [{ code: 500, msg: 'Failed to adjust quantity' }, null];
   }
   const existing = new Map(rows.map(row => [row.id, shape(row)]));
   const missing = wanted.find(entry => !existing.has(entry.id));
@@ -435,7 +433,7 @@ export const adjustStockMany = async (changes, { reason = 'adjustment', note = '
   const drafts = new Map();
   for(const entry of wanted){
     const draft = { delta: entry.delta, reason: entry.reason ?? reason, note: entry.note ?? note };
-    const refused = await guard(EVENTS.stockBeforeAdjust, { item: existing.get(entry.id), draft, userId, actor: owner });
+    const refused = await guard(EVENTS.quantityBeforeAdjust, { item: existing.get(entry.id), draft, userId, actor: owner });
     if(refused) return [refused, null];
     const delta = toInt(draft.delta, NaN);
     if(Number.isNaN(delta) || delta === 0) return [{ code: 400, msg: 'delta must be a non-zero whole number' }, null];
@@ -451,9 +449,9 @@ export const adjustStockMany = async (changes, { reason = 'adjustment', note = '
           .set({ quantity: sql`${kempoInventoryItem.quantity} + ${delta}`, updated: new Date() })
           .where(and(eq(kempoInventoryItem.id, entry.id), sql`${kempoInventoryItem.quantity} + ${delta} >= 0`))
           .returning();
-        if(!row) throw new Refusal({ code: 409, msg: `Insufficient stock of ${existing.get(entry.id).name}` });
+        if(!row) throw new Refusal({ code: 409, msg: `Insufficient quantity of ${existing.get(entry.id).name}` });
         const [movement] = await tx.insert(kempoInventoryMovement).values({
-          id: newId(), itemId: entry.id, delta, quantityAfter: row.quantity, heldAfter: row.held, reason: why,
+          id: newId(), itemId: entry.id, delta, quantityAfter: row.quantity, reason: why,
           note: ref ? `${text ? `${text} ` : ''}[${ref}]` : text, userId, created: new Date(),
         }).returning();
         results.push({ row, movement, delta });
@@ -464,14 +462,14 @@ export const adjustStockMany = async (changes, { reason = 'adjustment', note = '
     for(const { row, movement, delta } of applied){
       const item = shape(row);
       items.push(item);
-      await notify(EVENTS.stockAdjusted, {
+      await notify(EVENTS.quantityAdjusted, {
         item, previousQuantity: item.quantity - delta, delta, reason: movement.reason, note: movement.note, movement, userId, actor: owner,
       });
     }
     return [null, { items }];
   } catch(error) {
     if(error instanceof Refusal) return [error.error, null];
-    return [{ code: 500, msg: 'Failed to adjust stock' }, null];
+    return [{ code: 500, msg: 'Failed to adjust quantity' }, null];
   }
 };
 
@@ -489,7 +487,7 @@ export const getMovements = async ({ itemId, limit = 50, offset = 0 } = {}) => {
 /*
   For an extension's uninstall.js: deletes every item it owns, with their history. With `release`
   the items are kept and handed back to the people who manage the inventory instead, which is the
-  right choice when they hold real stock.
+  right choice when they hold real quantity.
 */
 export const unregisterItems = async (owner, { release = false } = {}) => {
   if(!owner) return [{ code: 400, msg: 'An owner (your extension name) is required' }, null];

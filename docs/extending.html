@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Building on it - Kempo Inventory</title>
-  <meta name="description" content="An inventory system for kempo cms: items, stock with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
+  <meta name="description" content="An inventory system for kempo cms: items, quantity with a full history, custom fields, categories, import and export, and a server SDK for other extensions." />
   <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
@@ -66,10 +66,10 @@
         <a href="./#quick-start" class="d-b">Quick start</a>
         <a href="./#works-with" class="d-b">Works with</a>
       </div>
-      <h5><a href="./items.html">Items and stock</a></h5>
+      <h5><a href="./items.html">Items and quantity</a></h5>
       <div class="ml mb -mt">
         <a href="./items.html#items" class="d-b">Items</a>
-        <a href="./items.html#adjusting" class="d-b">Changing stock</a>
+        <a href="./items.html#adjusting" class="d-b">Changing quantity</a>
         <a href="./items.html#tags" class="d-b">Tags</a>
         <a href="./items.html#scanning" class="d-b">Barcode scanning</a>
       </div>
@@ -89,7 +89,7 @@
       <h5><a href="./access.html">Photos and access</a></h5>
       <div class="ml mb -mt">
         <a href="./access.html#who-reads" class="d-b">Who can read</a>
-        <a href="./access.html#stock-counts" class="d-b">Who sees stock</a>
+        <a href="./access.html#quantity-counts" class="d-b">Who sees quantity</a>
         <a href="./access.html#photos" class="d-b">Photos and files</a>
         <a href="./access.html#image-shape" class="d-b">Photo shape and size</a>
       </div>
@@ -145,7 +145,7 @@
   <span class="hljs-attr">&quot;dependencies&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;kempo-inventory&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;hooks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
     <span class="hljs-attr">&quot;kempo-inventory:item:before_create&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/before-create.js&quot;</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;kempo-inventory:stock:adjusted&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/stock-adjusted.js&quot;</span>
+    <span class="hljs-attr">&quot;kempo-inventory:quantity:adjusted&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/quantity-adjusted.js&quot;</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre>
     <pre><code class="hljs javascript"><span class="hljs-comment">// install.js</span>
@@ -166,7 +166,7 @@
     <p><code>registerFields</code> is idempotent, so it is safe to call again on update. It refuses to take a key another owner holds, or to change an existing field's type. Kempo stops a dependency being uninstalled while something that depends on it is enabled.</p>
 
     <h2 id="sdk" class="mt">Server SDK</h2>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getItems, createItem, adjustStock, registerFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;</code></pre>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getItems, createItem, adjustQuantity, registerFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;</code></pre>
     <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
     <div class="table-wrapper mb">
       <table>
@@ -178,10 +178,10 @@
           <tr><td><code>createItem({ sku, name, description, quantity, fields, userId }, { owner })</code></td><td>Create. <code>owner</code> makes it your extension's</td></tr>
           <tr><td><code>updateItem(id, { sku, name, description, fields, userId }, { owner })</code></td><td>Update. <code>fields</code> is merged, and an empty value clears a field. SKU, name and category of an owned item need its <code>owner</code></td></tr>
           <tr><td><code>deleteItem(id, { userId, owner })</code></td><td>Delete an item and its history (owned items need their <code>owner</code>)</td></tr>
-          <tr><td><code>adjustStock(id, { delta, reason, note, userId })</code></td><td>The way quantity changes, for anyone. Atomic, and refuses to go below zero</td></tr>
-          <tr><td><code>adjustStockMany(changes, { reason, note, ref, userId, owner })</code></td><td>Several stock changes together: every one happens or none does. See <a href="#adjust-many">below</a></td></tr>
+          <tr><td><code>adjustQuantity(id, { delta, reason, note, userId })</code></td><td>The way quantity changes, for anyone. Atomic, and refuses to go below zero</td></tr>
+          <tr><td><code>adjustQuantityMany(changes, { reason, note, ref, userId, owner })</code></td><td>Several quantity changes together: every one happens or none does. See <a href="#adjust-many">below</a></td></tr>
           <tr><td><code>unregisterItems(owner, { release })</code></td><td>Delete every item you own, or with <code>release</code> hand them back to people</td></tr>
-          <tr><td><code>getMovements({ itemId, limit, offset })</code></td><td>Stock history</td></tr>
+          <tr><td><code>getMovements({ itemId, limit, offset })</code></td><td>Quantity history</td></tr>
           <tr><td><code>getFields({ category, owner })</code>, <code>getField(key, category)</code></td><td>Read field definitions. <code>getFields()</code> is every field (each with its <code>category</code> key and <code>categoryName</code>). With <code>category</code> it is what an item in that category shows</td></tr>
           <tr><td><code>createField(definition)</code>, <code>updateField(key, changes)</code>, <code>deleteField(key)</code></td><td>Manage user-defined fields</td></tr>
           <tr><td><code>getCategories({ includeEmpty, owner })</code>, <code>saveCategory(name, { newName, image, description, tags }, { owner })</code>, <code>deleteCategory(name, { owner })</code></td><td>The categories, and managing them</td></tr>
@@ -203,7 +203,7 @@
         <tbody>
           <tr><td><strong>Field</strong></td><td>Delete it, change its key, type (within the safe conversions), requirement or options</td><td>Rename it, change its description, list and suggest settings and position</td></tr>
           <tr><td><strong>Category</strong></td><td>Rename it (which rewrites its items), merge into or out of it, delete it</td><td>Change its image, description and tags, and put items in it</td></tr>
-          <tr><td><strong>Item</strong></td><td>Change its SKU, name and category, delete it</td><td>Edit description, tags and custom field values, and <strong>adjust stock</strong></td></tr>
+          <tr><td><strong>Item</strong></td><td>Change its SKU, name and category, delete it</td><td>Edit description, tags and custom field values, and <strong>adjust quantity</strong></td></tr>
         </tbody>
       </table>
     </div>
@@ -233,15 +233,15 @@
     <p>To protect more than this (say, the <em>values</em> of a field you own), subscribe to the <a href="#hooks"><code>before_*</code> hooks</a>. Every payload carries <code>actor</code>, the extension making the change or <code>''</code> for a person.</p>
 
     <h2 id="adjust-many" class="mt">Several items at once</h2>
-    <p><code>adjustStock</code> changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. <code>adjustStockMany</code> applies the whole set together:</p>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { adjustStockMany } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
+    <p><code>adjustQuantity</code> changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. <code>adjustQuantityMany</code> applies the whole set together:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { adjustQuantityMany } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-inventory/sdk&#x27;</span>;
 
-<span class="hljs-keyword">const</span> [error, { items }] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">adjustStockMany</span>(
+<span class="hljs-keyword">const</span> [error, { items }] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">adjustQuantityMany</span>(
   [{ <span class="hljs-attr">id</span>: resin.<span class="hljs-property">id</span>, <span class="hljs-attr">delta</span>: -<span class="hljs-number">175</span> }, { <span class="hljs-attr">id</span>: paint.<span class="hljs-property">id</span>, <span class="hljs-attr">delta</span>: -<span class="hljs-number">20</span> }],
   { <span class="hljs-attr">reason</span>: <span class="hljs-string">&#x27;sale&#x27;</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">&#x27;order-1042&#x27;</span>, <span class="hljs-attr">owner</span>: <span class="hljs-string">&#x27;my-extension&#x27;</span> },
 );
-<span class="hljs-comment">// error.code 409 and error.msg &quot;Insufficient stock of Paint (ml)&quot;: nothing changed</span></code></pre>
-    <p>Changes to the same item are added together, and one that nets to nothing is left out. Every item goes through the same <code>before_adjust</code> guard as <code>adjustStock</code>, and each fires <code>stock:adjusted</code> once everything is committed. <code>ref</code> is written on every stock movement (as <code>[order-1042]</code> in its note) so the change can be found, and reversed, later.</p>
+<span class="hljs-comment">// error.code 409 and error.msg &quot;Insufficient quantity of Paint (ml)&quot;: nothing changed</span></code></pre>
+    <p>Changes to the same item are added together, and one that nets to nothing is left out. Every item goes through the same <code>before_adjust</code> guard as <code>adjustQuantity</code>, and each fires <code>quantity:adjusted</code> once everything is committed. <code>ref</code> is written on every quantity movement (as <code>[order-1042]</code> in its note) so the change can be found, and reversed, later.</p>
 
     <h2 id="hooks" class="mt">Hooks</h2>
     <p>Declare these in your <code>kempo-config.json</code> <code>hooks</code>. Every payload also carries <code>actor</code>: the extension that made the change through the SDK, or <code>''</code> for a person using the admin.</p>
@@ -254,7 +254,7 @@
           <tr><td><code>kempo-inventory:item:before_create</code></td><td><code>{ draft: { sku, name, description, quantity, fields }, userId }</code></td><td>edit <code>draft</code></td></tr>
           <tr><td><code>kempo-inventory:item:before_update</code></td><td><code>{ item, changes: { sku?, name?, description?, fields? }, userId }</code></td><td>edit <code>changes</code></td></tr>
           <tr><td><code>kempo-inventory:item:before_delete</code></td><td><code>{ item, userId }</code></td><td>refuse only</td></tr>
-          <tr><td><code>kempo-inventory:stock:before_adjust</code></td><td><code>{ item, draft: { delta, reason, note }, userId }</code></td><td>edit <code>draft</code></td></tr>
+          <tr><td><code>kempo-inventory:quantity:before_adjust</code></td><td><code>{ item, draft: { delta, reason, note }, userId }</code></td><td>edit <code>draft</code></td></tr>
           <tr><td><code>kempo-inventory:category:before_update</code></td><td><code>{ name, newName, changes: { description?, tags?, image? }, userId }</code></td><td>refuse only</td></tr>
           <tr><td><code>kempo-inventory:category:before_delete</code></td><td><code>{ category, name, userId }</code> (<code>category</code> is <code>null</code> for one with no record)</td><td>refuse only</td></tr>
           <tr><td><code>kempo-inventory:field:before_create</code></td><td><code>{ draft }</code></td><td>refuse only</td></tr>
@@ -273,7 +273,7 @@
           <tr><td><code>kempo-inventory:item:created</code></td><td><code>{ item, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:item:updated</code></td><td><code>{ item, previous, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:item:deleted</code></td><td><code>{ item, userId }</code></td></tr>
-          <tr><td><code>kempo-inventory:stock:adjusted</code></td><td><code>{ item, previousQuantity, delta, reason, note, movement, userId }</code></td></tr>
+          <tr><td><code>kempo-inventory:quantity:adjusted</code></td><td><code>{ item, previousQuantity, delta, reason, note, movement, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:category:updated</code></td><td><code>{ category, previous, moved, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:category:deleted</code></td><td><code>{ category, userId }</code></td></tr>
           <tr><td><code>kempo-inventory:field:created</code></td><td><code>{ field }</code></td></tr>
@@ -283,7 +283,7 @@
       </table>
     </div>
     <p>For example, a low-stock check that reacts to every adjustment:</p>
-    <pre><code class="hljs javascript"><span class="hljs-comment">// hooks/stock-adjusted.js</span>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// hooks/quantity-adjusted.js</span>
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> ({ item }) =&gt; {
   <span class="hljs-keyword">const</span> level = item.<span class="hljs-property">fields</span>.<span class="hljs-property">reorderLevel</span>;
   <span class="hljs-keyword">if</span>(level !== <span class="hljs-literal">undefined</span> &amp;&amp; item.<span class="hljs-property">quantity</span> &lt;= level){

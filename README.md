@@ -2,7 +2,7 @@
 
 The core of an inventory system for [kempo](https://www.npmjs.com/package/kempo) CMS. It is deliberately small: every item has just a **SKU**, **name**, **quantity** and **description**. Everything else is a *custom field* that a person adds in the admin, or that another extension registers, so the same base can model anything: parts, books, rentals, supplies.
 
-- Stock changes go through one audited action, with a reason, a note and a movement history
+- Quantity changes go through one audited action, with a reason, a note and a movement history
 - Custom fields of seven types, managed in **Admin > Inventory > Fields**
 - A server SDK and a set of hooks so other extensions can extend it (reorder levels, pricing, suppliers, categories...), and fields, categories and items can be owned by an extension
 - Admin page at **Admin > Inventory**, JSON API under `/inventory/api`
@@ -77,15 +77,15 @@ A photo field (type "Photos / files") can **force how photos are saved**. When y
 - **Force photo shape**: an aspect ratio such as `1:1`, `4:3` or `16:9`. Each photo added to the field opens in Kempo UI's `<k-image-crop>`, locked to that shape, so only that shape can be saved; **Skip** leaves a photo out.
 - **Max size (px)**: photos are kept within this many pixels on a side (scaled down, never up). With only a max size and no shape, photos are simply scaled down, with no cropper.
 
-Leave both empty and photos are uploaded as they are. The stored file is the cropped one, so the shape holds everywhere it is shown. A category's picture is always cropped to the `category_image_ratio` setting below. Anything the browser cannot edit (GIF, SVG, HEIC, video) is uploaded untouched. The same two properties (`imageRatio`, `imageMax`) are on the field API, and `<inventory-media-field crop-ratio="1 / 1" crop-max="1600">` applies them in your own forms. Needs kempo-ui 0.5 or newer.
+Leave both empty and photos are uploaded as they are. The stored file is the cropped one, so the shape holds everywhere it is shown. A category's picture is always cropped to the `category_image_ratio` setting below. Anything the browser cannot edit (GIF, SVG, HEIC, video) is uploaded untouched. The same two properties (`imageRatio`, `imageMax`) are on the field API, and `<k-inventory-media-field crop-ratio="1 / 1" crop-max="1600">` applies them in your own forms. Needs kempo-ui 0.5 or newer.
 
 ## Image shape
 
-Two settings (**Admin > Settings**) set the aspect ratio images are *shown* at (a display crop; a photo field's forced shape above changes what is stored): `category_image_ratio` and `item_image_ratio`, written `width:height` (`4:3` by default, or `1:1`, `16:9`...). A blank or invalid value falls back to `4:3`. Images are **cropped to fit** the shape, never stretched, and the originals are not changed, so changing the setting reshapes every image at once. The admin's category and item pickers use them, and `GET /inventory/api/fields` returns them as `imageRatios` (CSS, e.g. `"4 / 3"`) so a site can do the same; `<inventory-media-field ratio-for="category">` previews at the category shape.
+Two settings (**Admin > Settings**) set the aspect ratio images are *shown* at (a display crop; a photo field's forced shape above changes what is stored): `category_image_ratio` and `item_image_ratio`, written `width:height` (`4:3` by default, or `1:1`, `16:9`...). A blank or invalid value falls back to `4:3`. Images are **cropped to fit** the shape, never stretched, and the originals are not changed, so changing the setting reshapes every image at once. The admin's category and item pickers use them, and `GET /inventory/api/fields` returns them as `imageRatios` (CSS, e.g. `"4 / 3"`) so a site can do the same; `<k-inventory-media-field ratio-for="category">` previews at the category shape.
 
 ## Import and export
 
-**Admin > Inventory** has **Export** and **Import** buttons (admin portal only; the public site has none). Both are limited to the **top tier**: the `kempo-inventory:fields:manage` permission, held by the `kempo-inventory:admin` group. A manager, a viewer or a signed-out visitor gets a 403 (or 401) and does not see the buttons, because an export carries the whole inventory out and an import can rewrite and re-stock all of it.
+**Admin > Inventory** has **Export** and **Import** buttons (admin portal only; the public site has none). Both are limited to the **top tier**: the `kempo-inventory:fields:manage` permission, held by the `kempo-inventory:admin` group. A manager, a viewer or a signed-out visitor gets a 403 (or 401) and does not see the buttons, because an export carries the whole inventory out and an import can rewrite and re-quantity all of it.
 
 **Export** downloads the whole inventory in one of two forms:
 
@@ -95,7 +95,7 @@ Two settings (**Admin > Settings**) set the aspect ratio images are *shown* at (
 **Import** takes either one (or any zip with an `inventory.json` in this format, including one re-zipped with compression). It is **done on the server**, in two steps:
 
 1. **Check.** The file is uploaded once and checked. You see how many items are new, how many already exist (matched by **SKU**; categories by name), what would be ignored, and any rows that cannot be imported and why. Nothing in the inventory has changed yet.
-2. **Import.** For the ones that already exist you choose **Ignore them** (leave what is here exactly as it is; the default) or **Update them** with the file's values (a value the file leaves empty never clears anything, and a changed quantity is recorded as a stock adjustment, "import", so the history stays honest).
+2. **Import.** For the ones that already exist you choose **Ignore them** (leave what is here exactly as it is; the default) or **Update them** with the file's values (a value the file leaves empty never clears anything, and a changed quantity is recorded as a quantity adjustment, "import", so the history stays honest).
 
 Things worth knowing: an import never creates or changes **fields**; a value only comes across when a field with the same key exists and applies to the item's category (the rest are ignored and counted). Rows are independent: one that fails (a missing name, a bad number, a required field with no value) does not stop the others. A field linking to another item is exported as that item's SKU and resolved by SKU on import, including to items created in the same import. Photos only come from the zip; each distinct photo is stored once, to the library new uploads normally go to (as the person importing, with its own file-library rules), at its original size.
 
@@ -122,11 +122,11 @@ Items and categories can be **tagged**: short labels such as `acrylic`, `red`, `
 - **Inheritance:** an item does not inherit its category's tags. Searching a category's tag finds the category, and the category is how you reach its items.
 - The admin lists show a Tags column. To reuse the control in your own forms, `ItemFields.js` exports `tagsValue(tags)`, `suggestTags` and `readTags($tags)` for use with `<k-tags .value=${tagsValue(tags)} .getSuggestions=${suggestTags}>`; `readTags` includes text typed but not yet added.
 
-## Who can read, and who can see stock counts
+## Who can read, and who can see quantity counts
 
 Reading the inventory needs the `items:read` permission. Turn on the `public_read` setting (off by default) and **anyone can read it, signed in or not**, so it can be shared as a catalogue. Public reading covers items, categories and fields (and photos, see below); writing always needs the matching permission.
 
-**Stock counts are only for people who manage stock.** A caller without `stock:adjust` or `items:update`, whether signed out, signed in with only `items:read`, or reading publicly, gets items **without `quantity`** and no stock history (`GET /inventory/api/movements` is refused). Callers who do manage stock get everything as before.
+**Quantity counts are only for people who manage quantity.** A caller without `quantity:adjust` or `items:update`, whether signed out, signed in with only `items:read`, or reading publicly, gets items **without `quantity`** and no stock history (`GET /inventory/api/movements` is refused). Callers who do manage quantity get everything as before.
 
 ## Who can see photos
 
@@ -186,12 +186,12 @@ scanner.stop();            // release the camera
 This extension ships the data and the API, plus an admin screen for managing it. A site that wants its own screens (a dashboard, product pages, a storefront) builds them itself, and can reuse the same browser modules the admin page uses:
 
 ```javascript
-import { getItems, getFields, adjustStock } from '/inventory/sdk.js';            // the API client
+import { getItems, getFields, adjustQuantity } from '/inventory/sdk.js';            // the API client
 import { openItemDialog, openAdjustDialog } from '/inventory/components/ItemDialog.js';
 import { fieldTemplate, readField, displayValue } from '/inventory/components/ItemFields.js';
 
 openItemDialog({ item, fields, onSaved: item => reload() });    // the form in a dialog, for a screen that really wants one
-openAdjustDialog({ item, onSaved: item => reload() });          // add or remove stock
+openAdjustDialog({ item, onSaved: item => reload() });          // add or remove quantity
 ```
 
 **Adding and editing an item are pages, not dialogs.** A dialog closes with a stray tap outside it and takes everything entered with it (photos taken with the camera included), so each gets a page of its own that keeps the work and warns before it is left. In the admin they are **Inventory > New Item** (`/admin/extension/kempo-inventory/new`) and the edit action on a row (`/admin/extension/kempo-inventory/edit?id=…`). A site gets the same from `NewItemPage.js`:
@@ -219,7 +219,7 @@ An extension that adds to inventory declares the dependency, registers its field
   "dependencies": ["kempo-inventory"],
   "hooks": {
     "kempo-inventory:item:before_create": "./hooks/before-create.js",
-    "kempo-inventory:stock:adjusted": "./hooks/stock-adjusted.js"
+    "kempo-inventory:quantity:adjusted": "./hooks/quantity-adjusted.js"
   }
 }
 ```
@@ -254,7 +254,7 @@ Fields, categories and items can each belong to an extension. `owner` is `''` fo
 |---|---|---|
 | **Field** | delete it, change its key, type (within the safe conversions), requirement or options | rename it, change its description, list/suggest settings and position |
 | **Category** | rename it (which rewrites its items), merge into or out of it, delete it | change its image, description and tags, and put items in it |
-| **Item** | change its SKU, name and category, delete it | edit description, tags and custom field values, and **adjust stock** |
+| **Item** | change its SKU, name and category, delete it | edit description, tags and custom field values, and **adjust quantity** |
 
 A category cannot be renamed or merged by anyone but its owner while it holds items or fields another extension owns, because that would rewrite them. Sending an owned item's current SKU, name and category back unchanged is not a change, so the admin form keeps working.
 
@@ -295,7 +295,7 @@ To protect more than this (say, the *values* of a field you own), subscribe to t
 ### Server SDK
 
 ```javascript
-import { getItems, createItem, adjustStock, registerFields } from 'kempo-inventory/sdk';
+import { getItems, createItem, adjustQuantity, registerFields } from 'kempo-inventory/sdk';
 ```
 
 Every function resolves to `[error, result]`, where `error` is `{ code, msg }` or `null`.
@@ -308,10 +308,10 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `createItem({ sku, name, description, quantity, fields, userId }, { owner })` | Create. `owner` makes it your extension's |
 | `updateItem(id, { sku, name, description, fields, userId }, { owner })` | Update; `fields` is merged, and an empty value clears a field. SKU, name and category of an owned item need its `owner` |
 | `deleteItem(id, { userId, owner })` | Delete an item and its history (owned items need their `owner`) |
-| `adjustStock(id, { delta, reason, note, userId })` | The way quantity changes, for anyone. Atomic; refuses to go below zero |
-| `adjustStockMany(changes, { reason, note, ref, userId, owner })` | Several stock changes together: every one happens or none does. `changes` is `[{ id, delta }]`. Use it when one event touches several items, such as the materials of a recipe |
+| `adjustQuantity(id, { delta, reason, note, userId })` | The way quantity changes, for anyone. Atomic; refuses to go below zero |
+| `adjustQuantityMany(changes, { reason, note, ref, userId, owner })` | Several quantity changes together: every one happens or none does. `changes` is `[{ id, delta }]`. Use it when one event touches several items, such as the materials of a recipe |
 | `unregisterItems(owner, { release })` | Delete every item you own, or with `release` hand them back to people |
-| `getMovements({ itemId, limit, offset })` | Stock history |
+| `getMovements({ itemId, limit, offset })` | Quantity history |
 | `getFields({ category, owner })`, `getField(key, category)` | Read field definitions. `getFields()` is every field (each with its `category` key and `categoryName`); with `category` it is what an item in that category shows |
 | `createField(definition)`, `updateField(key, changes)`, `deleteField(key)` | Manage user-defined fields |
 | `getCategories({ includeEmpty, owner })`, `saveCategory(name, { newName, image, description, tags }, { owner })`, `deleteCategory(name, { owner })` | The categories, and managing them |
@@ -321,49 +321,23 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `unregisterFields(owner)` | Remove every field your extension owns, and their values |
 | `FIELD_TYPES`, `EVENTS` | The field types and the hook event names |
 
-An item looks like `{ id, sku, name, description, category, tags, quantity, held, fields: { ...custom values }, owner, created, updated }`.
+An item looks like `{ id, sku, name, description, category, tags, quantity, fields: { ...custom values }, owner, created, updated }`.
 
 ### Several items at once
 
-`adjustStock` changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. `adjustStockMany` applies the whole set together:
+`adjustQuantity` changes one item in its own transaction, so a sale that uses resin, paint and filament could take the resin and then find the paint short. `adjustQuantityMany` applies the whole set together:
 
 ```javascript
-import { adjustStockMany } from 'kempo-inventory/sdk';
+import { adjustQuantityMany } from 'kempo-inventory/sdk';
 
-const [error, { items }] = await adjustStockMany(
+const [error, { items }] = await adjustQuantityMany(
   [{ id: resin.id, delta: -175 }, { id: paint.id, delta: -20 }],
   { reason: 'sale', ref: 'order-1042', owner: 'my-extension' },
 );
-// error.code 409 and error.msg "Insufficient stock of Paint (ml)": nothing changed
+// error.code 409 and error.msg "Insufficient quantity of Paint (ml)": nothing changed
 ```
 
-Changes to the same item are added together and one that nets to nothing is left out. Every item goes through the same `before_adjust` guard as `adjustStock`, and each fires `stock:adjusted` once everything is committed. `ref` is written on every stock movement (as `[order-1042]` in its note) so the change can be found, and reversed, later.
-
-### Held stock
-
-An item has two figures: **`quantity`**, what is *available* now, and **`held`**, what is set aside for something that has not finished — an order waiting for its payment, a job waiting for its materials. The stock the item really has is the two added together.
-
-`quantity` stays the figure everything already reads, so holding stock lowers what can be sold or used everywhere without anything else having to know about holds. Three moves, each all or nothing across every item in the call, and each recorded as a movement (`heldDelta`, `heldAfter`):
-
-| Function | Moves | When |
-|---|---|---|
-| `holdStock(changes, options)` | available → **held** | an order is placed |
-| `releaseStock(changes, options)` | held → **available** | it was cancelled, expired or failed |
-| `consumeHeld(changes, options)` | held → **gone** | it was fulfilled: the units have left |
-
-```javascript
-import { holdStock, consumeHeld, releaseStock } from 'kempo-inventory/sdk';
-
-const [error, { items }] = await holdStock([{ id: resin.id, quantity: 175 }], { ref: 'order-1042', owner: 'my-extension' });
-// error.code 409 and "Not enough of Resin (g) is available to hold": nothing changed
-
-await consumeHeld([{ id: resin.id, quantity: 175 }], { ref: 'order-1042', owner: 'my-extension' });   // paid
-await releaseStock([{ id: resin.id, quantity: 175 }], { ref: 'order-1042', owner: 'my-extension' });   // or not
-```
-
-`changes` is `[{ id, quantity }]` (or one `{ id, quantity }`), with `quantity` a whole number above zero; the same item twice is added together. Every move is a single conditional update, so concurrent callers cannot hold what is not available, release what is not held, or take either figure below zero. `ref` is written on every movement so what was held for an order can be found and given back later.
-
-Holding and releasing change what is available, so they also fire `stock:adjusted` (with `reason` `hold` or `release`), and anything that reacts to availability — such as kempo-products-inventory — stays correct. `stock:held` fires for all three. `adjustStock` leaves `held` alone, and an item with stock on hold cannot be deleted until it is given back. The admin list shows an **On hold** column once anything is held.
+Changes to the same item are added together and one that nets to nothing is left out. Every item goes through the same `before_adjust` guard as `adjustQuantity`, and each fires `quantity:adjusted` once everything is committed. `ref` is written on every quantity movement (as `[order-1042]` in its note) so the change can be found, and reversed, later.
 
 ### Adding to the item page
 
@@ -380,8 +354,7 @@ Declare these in your `kempo-config.json` `hooks`. Every payload also carries `a
 | `kempo-inventory:item:before_create` | `{ draft: { sku, name, description, quantity, fields }, userId }` | edit `draft` |
 | `kempo-inventory:item:before_update` | `{ item, changes: { sku?, name?, description?, fields? }, userId }` | edit `changes` |
 | `kempo-inventory:item:before_delete` | `{ item, userId }` | refuse only |
-| `kempo-inventory:stock:before_adjust` | `{ item, draft: { delta, reason, note }, userId }` | edit `draft` |
-| `kempo-inventory:stock:before_hold` | `{ item, draft: { kind, quantity, reason, note }, userId }` (`kind` is `hold`, `release` or `consume`) | edit `draft` |
+| `kempo-inventory:quantity:before_adjust` | `{ item, draft: { delta, reason, note }, userId }` | edit `draft` |
 | `kempo-inventory:category:before_update` | `{ name, newName, changes: { description?, tags?, image? }, userId }` | refuse only |
 | `kempo-inventory:category:before_delete` | `{ category, name, userId }` (`category` is `null` for one with no record) | refuse only |
 | `kempo-inventory:field:before_create` | `{ draft }` | refuse only |
@@ -397,8 +370,7 @@ Ownership is checked first, so these only run for changes that would otherwise g
 | `kempo-inventory:item:created` | `{ item, userId }` |
 | `kempo-inventory:item:updated` | `{ item, previous, userId }` |
 | `kempo-inventory:item:deleted` | `{ item, userId }` |
-| `kempo-inventory:stock:adjusted` | `{ item, previousQuantity, delta, reason, note, movement, userId }` |
-| `kempo-inventory:stock:held` | `{ item, kind, quantity, previousQuantity, previousHeld, movement, userId }` |
+| `kempo-inventory:quantity:adjusted` | `{ item, previousQuantity, delta, reason, note, movement, userId }` |
 | `kempo-inventory:category:updated` | `{ category, previous, moved, userId }` |
 | `kempo-inventory:category:deleted` | `{ category, userId }` |
 | `kempo-inventory:field:created` | `{ field }` |
@@ -408,7 +380,7 @@ Ownership is checked first, so these only run for changes that would otherwise g
 For example, a low-stock check that reacts to every adjustment:
 
 ```javascript
-// hooks/stock-adjusted.js
+// hooks/quantity-adjusted.js
 export default async ({ item }) => {
   const level = item.fields.reorderLevel;
   if(level !== undefined && item.quantity <= level){
@@ -427,7 +399,7 @@ Hooks run one at a time, in registration order, and are awaited, so a slow handl
 | `kempo-inventory:items:create` | Add items |
 | `kempo-inventory:items:update` | Edit items |
 | `kempo-inventory:items:delete` | Delete items (and their history) |
-| `kempo-inventory:stock:adjust` | Add or remove stock |
+| `kempo-inventory:quantity:adjust` | Add or remove quantity |
 | `kempo-inventory:fields:manage` | Create, edit and delete custom fields |
 
 Groups, each including everything in the one before it:
@@ -435,7 +407,7 @@ Groups, each including everything in the one before it:
 | Group | Can |
 |---|---|
 | `kempo-inventory:viewer` | View items, fields and movements |
-| `kempo-inventory:manager` | Also create, edit and delete items and adjust stock |
+| `kempo-inventory:manager` | Also create, edit and delete items and adjust quantity |
 | `kempo-inventory:admin` | Also set up the custom fields (`fields:manage`) |
 
 Every group also includes `system:admin:access`, because kempo serves extension pages inside the admin panel and redirects anyone without it. That only opens the panel itself: its other sections stay locked behind their own permissions.
@@ -477,4 +449,4 @@ The documentation site is written in `docs-src/` and built into `docs/` (served 
 
 ## Dashboard widget
 
-Adds a **Inventory** widget to the kempo admin dashboard showing item, unit and out-of-stock counts and the latest stock movements, with a **New item** button. It is declared in `widgets` in `kempo-config.json` and registered when the extension is installed or updated; people only see it if they hold its permission, and can hide, reorder or resize it from the dashboard's Customize dialog. Needs a kempo with the dashboard (see kempo's `docs/dashboard.md`); on an older kempo the entry is ignored.
+Adds a **Inventory** widget to the kempo admin dashboard showing item, unit and out-of-stock counts and the latest quantity movements, with a **New item** button. It is declared in `widgets` in `kempo-config.json` and registered when the extension is installed or updated; people only see it if they hold its permission, and can hide, reorder or resize it from the dashboard's Customize dialog. Needs a kempo with the dashboard (see kempo's `docs/dashboard.md`); on an older kempo the entry is ignored.

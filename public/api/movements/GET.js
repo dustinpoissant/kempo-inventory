@@ -4,7 +4,7 @@ import { getMovements } from '../../../server/utils/items.js';
 export default async (request, response) => {
   const [authError, access] = await authorizeRead(request);
   if(authError) return response.status(authError.code).json({ error: authError.msg });
-  if(!access.canSeeStock) return response.status(403).json({ error: 'Insufficient permissions' });
+  if(!access.canSeeQuantity) return response.status(403).json({ error: 'Insufficient permissions' });
 
   const { itemId, limit, offset } = request.query;
   const [error, movements] = await getMovements({

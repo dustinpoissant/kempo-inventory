@@ -118,7 +118,7 @@ export const openImportDialog = ({ onDone = () => {} } = {}) => {
           </label>
           <label class="d-f mb" style="gap: var(--spacer_h); align-items: flex-start; cursor: pointer;">
             <input type="radio" name="onMatch" value="update" ?checked=${state.onMatch === 'update'} @change=${() => { state.onMatch = 'update'; draw(); }}>
-            <span><strong>Update them</strong> with the values in the file<br><small class="tc-muted">A value the file leaves empty never clears anything. A changed quantity is recorded as a stock adjustment.</small></span>
+            <span><strong>Update them</strong> with the values in the file<br><small class="tc-muted">A value the file leaves empty never clears anything. A changed quantity is recorded as a quantity adjustment.</small></span>
           </label>` : ''}
         ${problemList(preview.results)}` : ''}
       ${state.phase === 'importing' ? html`<p><k-spinner size="sm"></k-spinner> Importing. With photos this can take a while; keep this window open.</p>` : ''}
