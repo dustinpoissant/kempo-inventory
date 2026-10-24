@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "description": "A basic inventory management system for kempo cms",
   "license": "MIT",
-  "author": "Dustin Poissant",
+  "author": "Dustin Poissant <dustinpoissant@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dustinpoissant/kempo-inventory.git"
