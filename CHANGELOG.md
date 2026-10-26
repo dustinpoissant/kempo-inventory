@@ -49,3 +49,8 @@ server SDK and hooks for other extensions to build on.
   owned item (or the name of an owned category) are locked with an explanation.
 - **Migration.** `update.js` adds `owner` to items and categories. Existing ones stay
   people-managed.
+
+## [0.4.1] - 2026-10-26
+### Changed
+- The items list is a kempo-ui table. The row opens the item, and Edit and Adjust quantity are row controls.
+- Requires kempo 4.9.7 (the admin lists use kempo-ui tables).

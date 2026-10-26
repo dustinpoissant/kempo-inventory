@@ -17,6 +17,7 @@ locked: true
   <script type="module" src="/kempo-ui/components/Toggle.js"></script>
   <script type="module" src="/kempo-ui/components/Combobox.js"></script>
   <script type="module" src="/kempo-ui/components/Icon.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcOpen.js"></script>
   <script type="module" src="/kempo/components/Permission.js"></script>
   <script type="module" src="/inventory/components/RowAction.js"></script>
 
@@ -28,6 +29,7 @@ locked: true
   -->
   <k-table
     id="itemsTable"
+    open-on-click
     enable-pages
     page-size="25"
     page-size-options="[10,25,50,100]"
@@ -90,8 +92,9 @@ locked: true
       $control.setAttribute('slot', slot);
       for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
       $table.appendChild($control);
+      return $control;
     };
-    if(can('items:update')) addControl('k-inventory-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    if(can('items:update')) addControl('kc-tc-open', 'before', { title: 'Edit' }).appendChild(Object.assign(document.createElement('k-icon'), { name: 'edit' }));
     if(can('quantity:adjust')) addControl('k-inventory-row-action', 'before', { action: 'adjust', icon: 'repeat', title: 'Adjust quantity' });
     if(can('items:delete')){
       $table.setAttribute('request-delete', '');
@@ -111,7 +114,7 @@ locked: true
       user-supplied text itself.
     */
     const decorate = (item, ctx) => {
-      const record = { ...item, qtyText: String(item.quantity), tagsText: item.tags.join(', '), ownerText: item.owner };
+      const record = { ...item, qtyText: String(item.quantity), tagsText: item.tags.join(', '), ownerText: item.owner, ...(can('items:update') && { _url: `/admin/extension/kempo-inventory/edit?id=${encodeURIComponent(item.id)}` }) };
       /* Only the fields that apply to this item's category; a column another category's items fill stays blank here. */
       for(const field of applicableFields(fields, item.category).filter(f => f.listed)) record[`f_${field.key}`] = displayValue(field, item.fields[field.key], ctx);
       return record;
@@ -119,7 +122,7 @@ locked: true
 
     const columns = () => [
       { name: 'sku', label: 'SKU', size: 130, editable: false },
-      { name: 'name', label: 'Name', size: 240, editable: false },
+      { name: 'name', label: 'Name', editable: false },
       { name: 'category', label: 'Category', size: 140, editable: false },
       { name: 'qtyText', label: 'Quantity', size: 100, editable: false },
       { name: 'tagsText', label: 'Tags', size: 160, editable: false },
@@ -185,8 +188,6 @@ locked: true
     });
 
     $table.addEventListener('itemAction', ({ detail: { action, record } }) => {
-      /* Editing is a page of its own, like adding: a dialog is too easy to dismiss and loses what was entered. */
-      if(action === 'edit') location.href = `/admin/extension/kempo-inventory/edit?id=${encodeURIComponent(record.id)}`;
       if(action === 'adjust') openAdjustDialog({ item: record, onSaved: load });
     });
 
