@@ -4,6 +4,12 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Fields is a tab on the Inventory page**, with the Items and Categories tabs. Its own page and the Fields button on the Items toolbar are removed, with no redirect. The tab loads when it is first opened, and needs `kempo-inventory:fields:manage`.
+
+- **Inventory and Inventory Categories are one admin page** at `/admin/extension/kempo-inventory/`, with an Items tab and a Categories tab (hash routing, so each has its own address: `#categories`). The Categories page, its nav entry and the Categories button on the Items toolbar are removed, with no redirect from the old address. Fields stays its own page.
+
 ### Removed (breaking)
 
 - **Held quantity is gone.** An item has one quantity again. `holdQuantity`, `releaseQuantity`, `consumeHeld`, the `kempo-inventory:quantity:before_hold` and `kempo-inventory:quantity:held` events, the `held` figure on an item, the "On hold" column and the refusal to delete an item with quantity on hold are removed. A hold belongs to whoever sells: kempo-products' ledger records the stock an order takes, and kempo-products-inventory takes the materials from here when it does and returns them when it is undone. Existing databases keep their `held`, `heldDelta` and `heldAfter` columns, which nothing reads or writes any more.
