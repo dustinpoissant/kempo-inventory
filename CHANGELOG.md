@@ -6,6 +6,9 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ### Changed
 
+- The `kempo-ui` peer dependency is now `>=1.0.0`.
+- The `kempo` peer dependency is now `>=4.10.2`.
+
 - **Fields is a tab on the Inventory page**, with the Items and Categories tabs. Its own page and the Fields button on the Items toolbar are removed, with no redirect. The tab loads when it is first opened, and needs `kempo-inventory:fields:manage`.
 
 - **Inventory and Inventory Categories are one admin page** at `/admin/extension/kempo-inventory/`, with an Items tab and a Categories tab (hash routing, so each has its own address: `#categories`). The Categories page, its nav entry and the Categories button on the Items toolbar are removed, with no redirect from the old address. Fields stays its own page.
