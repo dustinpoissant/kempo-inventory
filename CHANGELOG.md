@@ -4,6 +4,10 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **An `inventory-item-tabs` location** on the admin item page. The page is now tabbed (Details first), and an extension adds its own tab with an admin/*.global.html file.
+
 ## [0.5.1] - 2026-11-09
 
 ### Added
