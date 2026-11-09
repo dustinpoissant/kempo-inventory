@@ -4,6 +4,12 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-09
+
+### Added
+
+- An **`inventory-item-sections` location** on the admin item page, below the form, so several extensions can each add a section to it (the `inventory-item-actions` fragment has a single winner).
+
 ## [0.5.0] - 2026-11-09
 
 Requires kempo 4.11.0 or later.

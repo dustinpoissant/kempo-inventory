@@ -341,7 +341,7 @@ Changes to the same item are added together and one that nets to nothing is left
 
 ### Adding to the item page
 
-An extension can add to the admin item page by supplying a fragment named `inventory-item-actions`, in `admin/inventory-item-actions.fragment.html` in its own package. It appears under the item form, and reads the item from `?id=` in the address. (kempo-products-inventory uses it for "Make product from this item".)
+An extension can add to the admin item page by supplying a fragment named `inventory-item-actions`, in `admin/inventory-item-actions.fragment.html` in its own package. It appears under the item form, and reads the item from `?id=` in the address. (kempo-products-inventory uses it for "Make product from this item".) That fragment has one winner, so for a section that several extensions may each add, fill the **`inventory-item-sections` location** instead with an `admin/*.global.html` file (`<content location="inventory-item-sections" priority="10">…</content>`). Every contribution is shown, ordered by `priority`, and reads the item from `?id=` too. (kempo-inventory-barcodes uses it for an item's barcodes.)
 
 ### Hooks
 

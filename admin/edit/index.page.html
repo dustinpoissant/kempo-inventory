@@ -18,6 +18,12 @@ locked: true
   -->
   <fragment name="inventory-item-actions"></fragment>
 
+  <!--
+    A place for sections from any number of extensions (barcodes, say): fill the location named
+    inventory-item-sections with an admin/*.global.html file. Each section reads the item from ?id=.
+  -->
+  <location name="inventory-item-sections" />
+
   <script type="module">
     import { getItem, getFields } from '/inventory/sdk.js';
     import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
