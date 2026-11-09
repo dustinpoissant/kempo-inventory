@@ -4,10 +4,14 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-09
+
+Requires kempo 4.11.0 or later.
+
 ### Changed
 
 - The `kempo-ui` peer dependency is now `>=1.0.0`.
-- The `kempo` peer dependency is now `>=4.10.2`.
+- The `kempo` peer dependency is now `>=4.11.0`.
 
 - **Fields is a tab on the Inventory page**, with the Items and Categories tabs. Its own page and the Fields button on the Items toolbar are removed, with no redirect. The tab loads when it is first opened, and needs `kempo-inventory:fields:manage`.
 

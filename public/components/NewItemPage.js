@@ -78,7 +78,7 @@ const mountItemPage = ({ $container, item = null, fields = [], defaults = {}, as
   $actions.className = 'd-f mt-lg';
   $actions.style.cssText = 'gap: var(--spacer_h); flex-wrap: wrap;';
   const draw = () => render(html`
-    <button type="button" class="btn success" id="saveItem" ?disabled=${saving} @click=${() => submit(false)}>${saving ? 'Saving…' : editing ? 'Save' : 'Create item'}</button>
+    <button type="button" class="btn success" id="saveItem" data-save ?disabled=${saving} @click=${() => submit(false)}>${saving ? 'Saving…' : editing ? 'Save' : 'Create item'}</button>
     ${editing ? '' : html`<button type="button" class="btn" id="saveAnother" ?disabled=${saving} @click=${() => submit(true)}>Create and add another</button>`}
     <button type="button" class="btn" id="cancelItem" ?disabled=${saving} @click=${cancel}>${cancelLabel}</button>`, $actions);
   draw();

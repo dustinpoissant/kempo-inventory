@@ -3,6 +3,9 @@
   "git": "https://github.com/dustinpoissant/kempo-inventory",
   "public-scope": "inventory",
   "schema": "./server/db/schema.js",
+  "suggestedPeers": [
+    { "name": "kempo-media", "reason": "Photos and other files on inventory items (brings kempo-files and kempo-thumbs with it)" }
+  ],
   "widgets": [
     {
       "key": "quantity",
