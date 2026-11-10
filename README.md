@@ -23,6 +23,7 @@ Users in the `kempo-inventory:admin` group add fields from **Inventory > Fields*
 | Type | Holds |
 |---|---|
 | `text` | Short text (up to 1,000 characters) |
+| `url` | A web address, shown as a link on the item page. Without a scheme `https://` is added; only `http` and `https` are accepted |
 | `longtext` | Longer text (up to 20,000 characters) |
 | `number` | Any number |
 | `boolean` | Yes / no |

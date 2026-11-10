@@ -112,7 +112,9 @@
 								? html`<span style="display: inline-block; width: 4rem; height: 4rem; vertical-align: middle; margin-right: var(--spacer_h); border: 1px solid var(--c_border); border-radius: var(--radius); background: ${item.fields[f.key]};"></span>${item.fields[f.key]}`
 								: f.type === 'item' && linked[item.fields[f.key]]
 								? html`<a href="/items/${item.fields[f.key]}">${displayValue(f, item.fields[f.key], context)}</a>`
-								: f.type === 'longtext'
+								: f.type === 'url'
+									? html`<a href=${item.fields[f.key]} rel="noopener">${item.fields[f.key]}</a>`
+									: f.type === 'longtext'
 									? html`<span style="white-space: pre-wrap;">${item.fields[f.key]}</span>`
 									: displayValue(f, item.fields[f.key], context)}</dd>`)}
 					</dl>` : ''}

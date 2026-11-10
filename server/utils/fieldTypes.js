@@ -6,7 +6,7 @@
 import { categoryKey } from './categoryLogic.js';
 import { parseRatio } from './ratio.js';
 
-export const FIELD_TYPES = ['text', 'longtext', 'number', 'boolean', 'date', 'color', 'rating', 'select', 'item', 'media'];
+export const FIELD_TYPES = ['text', 'url', 'longtext', 'number', 'boolean', 'date', 'color', 'rating', 'select', 'item', 'media'];
 
 /*
   Types that depend on another extension being installed. They are always valid in a definition,
@@ -47,6 +47,7 @@ export const KEY_PATTERN = /^[a-z][a-zA-Z0-9]{0,39}$/;
 
 const MAX_TEXT = 1000;
 const MAX_LONGTEXT = 20000;
+const MAX_URL = 2000;
 
 export const isEmpty = value => value === undefined || value === null || value === '';
 
@@ -135,6 +136,16 @@ export const coerceValue = (field, raw) => {
       const value = String(raw).trim();
       if(!value) return [null, null];
       return value.length > MAX_LONGTEXT ? bad(`must be ${MAX_LONGTEXT} characters or fewer`) : [null, value];
+    }
+    case 'url': {
+      /* Without a scheme https:// is added. Only http and https are kept, so a link can never run a script. */
+      const text = String(raw).trim();
+      if(!text) return [null, null];
+      const address = /^[a-z][a-z0-9+.-]*:/i.test(text) ? text : `https://${text}`;
+      if(address.length > MAX_URL) return bad(`must be ${MAX_URL} characters or fewer`);
+      let parsed;
+      try { parsed = new URL(address); } catch { return bad('must be a web address, such as https://example.com'); }
+      return ['http:', 'https:'].includes(parsed.protocol) ? [null, address] : bad('must be a web address, such as https://example.com');
     }
     case 'number': {
       const value = typeof raw === 'number' ? raw : Number(String(raw).trim());

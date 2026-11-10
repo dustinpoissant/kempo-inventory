@@ -354,6 +354,9 @@ export const fieldTemplate = (field, value, { linked = {}, media = {}, ownId = n
     case 'longtext':
       control = html`<textarea id=${id} class="full" rows="3" .value=${value ?? ''}></textarea>`;
       break;
+    case 'url':
+      control = html`<input type="url" id=${id} class="full" placeholder="https://" .value=${value ?? ''}>`;
+      break;
     case 'number':
       control = html`<input type="number" step="any" id=${id} class="full" .value=${value ?? ''}>`;
       break;

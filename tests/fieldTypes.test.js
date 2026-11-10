@@ -4,6 +4,14 @@ import { normalizeFieldDefinition, coerceValue, coerceValues, keyFromLabel, pars
 
 const field = (type, extra = {}) => ({ key: 'f', label: 'F', type, required: false, options: [], ...extra });
 
+test('a url field keeps a web address and refuses anything that is not http or https', () => {
+  const link = field('url');
+  assert.deepEqual(coerceValue(link, 'example.com/shop'), [null, 'https://example.com/shop']);
+  assert.deepEqual(coerceValue(link, 'http://a.test'), [null, 'http://a.test']);
+  assert.equal(coerceValue(link, 'javascript:alert(1)')[0].code, 400);
+  assert.deepEqual(coerceValue(link, ''), [null, null]);
+});
+
 test('keyFromLabel builds camelCase keys', () => {
   assert.equal(keyFromLabel('Reorder level'), 'reorderLevel');
   assert.equal(keyFromLabel('  Manufacturer  '), 'manufacturer');

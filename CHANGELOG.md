@@ -6,6 +6,7 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ### Added
 
+- **Web address field type (`url`).** Stored like short text, shown as a link on the item page. Without a scheme `https://` is added; only http and https are accepted, so a link cannot run a script.
 - **Units.** Items and categories have a unit (oz, g, or anything up to 20 characters). An item's own unit overrides its category's. The unit is shown beside quantities on the item's Quantity tab and in the admin list, and it is kept by export and import. Nothing is built in: a unit is only what someone types.
 - **Decimal quantities.** The `decimal_quantity` setting (off by default) allows quantities with up to four decimal places, such as 2.5 oz. Off, quantities stay whole numbers. Turning it on does not change quantities already stored. Quantities are now stored with decimal places, so this update changes the quantity columns' type on existing databases.
 - **Set to a count.** The Quantity tab and the admin Adjust dialog can set the count outright; the change is worked out from the count held at the moment of the write. Setting the count it already has records nothing.
