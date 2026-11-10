@@ -103,7 +103,6 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
           <button type="button" class="btn" id="dlg-scan" ?disabled=${locked} @click=${scan}>Scan</button>
         </div>
       </div>
-      ${editing || !askQuantity ? '' : html`<div style="width: 9rem;"><label class="d-b mb-sm" for="dlg-qty">Starting quantity</label><input type="number" id="dlg-qty" class="full" min="0" step="1" .value=${String(defaults.quantity ?? 0)}></div>`}
     </div>
     <div class="mb"><label class="d-b mb-sm" for="dlg-name">Name *</label><input type="text" id="dlg-name" class="full" ?disabled=${locked} .value=${item?.name ?? defaults.name ?? ''}></div>
     <div class="mb">
@@ -113,11 +112,14 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
         @focusin=${e => offerCategories(e.currentTarget)}
         @search=${showFields} @select=${() => setTimeout(showFields)} @change=${() => setTimeout(showFields)} @focusout=${() => setTimeout(showFields, 150)}></k-combobox>
     </div>
-    <div class="mb">
-      <label class="d-b mb-sm" for="dlg-unit">Unit
-        <small class="d-b tc-muted">What the quantity counts, such as oz or g. Leave empty to use the category's unit.</small>
-      </label>
-      <input type="text" id="dlg-unit" class="full" maxlength="20" .value=${item?.unit ?? defaults.unit ?? ''}>
+    <div class="d-f mb" style="align-items: flex-end; gap: var(--spacer);">
+      <div class="flex">
+        <label class="d-b mb-sm" for="dlg-unit">Unit
+          <small class="d-b tc-muted">What the quantity counts, such as oz or g. Leave empty to use the category's unit.</small>
+        </label>
+        <input type="text" id="dlg-unit" class="full" maxlength="20" .value=${item?.unit ?? defaults.unit ?? ''}>
+      </div>
+      ${editing || !askQuantity ? '' : html`<div style="width: 9rem;"><label class="d-b mb-sm" for="dlg-qty">Starting quantity</label><input type="number" id="dlg-qty" class="full" min="0" step="1" .value=${String(defaults.quantity ?? 0)}></div>`}
     </div>
     <div class="mb"><label class="d-b mb-sm" for="dlg-tags">Tags</label><k-tags id="dlg-tags" .value=${tagsValue(item?.tags ?? defaults.tags)} .getSuggestions=${suggestTags} @input=${lowerTagInput} @change=${lowerTagChips}></k-tags></div>
     <div class="mb"><label class="d-b mb-sm" for="dlg-description">Description</label><textarea id="dlg-description" class="full" rows="2" .value=${item?.description ?? ''}></textarea></div>
