@@ -22,7 +22,7 @@ import { getFields, createField, updateField, deleteField, getCategories } from 
 */
 const TYPE_LABELS = {
   text: 'Text',
-  url: 'Web address (link)',
+  url: 'URL',
   longtext: 'Long text',
   number: 'Number',
   boolean: 'Yes / No',

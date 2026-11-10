@@ -24,7 +24,7 @@ export const MAX_IMAGE_EDGE = 8000;
   else, such as text to a number, could orphan existing values, so it is refused: delete the field
   and make a new one instead.
 */
-export const CONVERSIONS = { select: ['text'], text: ['longtext'] };
+export const CONVERSIONS = { select: ['text'], text: ['longtext', 'url'] };
 
 export const canConvert = (from, to) => from === to || (CONVERSIONS[from] ?? []).includes(to);
 

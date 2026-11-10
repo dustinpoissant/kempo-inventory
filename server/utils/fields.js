@@ -3,13 +3,31 @@ import { eq, and, asc, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { kempoInventoryField, kempoInventoryItem, kempoInventoryCategory } from '../db/schema.js';
 import { categoryKey, tidyCategory, MAX_CATEGORY } from './categoryLogic.js';
-import { normalizeFieldDefinition, OPTIONAL_TYPES, canConvert } from './fieldTypes.js';
+import { normalizeFieldDefinition, OPTIONAL_TYPES, canConvert, coerceValue } from './fieldTypes.js';
 import { mediaAvailable } from './media.js';
 import { EVENTS, guard, notify } from './hooks.js';
 
 const newId = () => crypto.randomBytes(8).toString('hex');
 
 const isUniqueViolation = error => (error?.code || error?.cause?.code) === '23505';
+
+/*
+  The values items hold for a key, each checked as a web address. Resolves to [null, rewrites] with the
+  full address of each, or an error naming the first value that is not one.
+*/
+const addressesOf = async (key, label) => {
+  const rows = await db.select({ id: kempoInventoryItem.id, data: kempoInventoryItem.data }).from(kempoInventoryItem)
+    .where(sql`${kempoInventoryItem.data}->>${key} IS NOT NULL`);
+  const rewrites = [];
+  for(const row of rows){
+    const value = row.data[key];
+    if(value === '' || value === null) continue;
+    const [invalid, address] = coerceValue({ type: 'url', label }, value);
+    if(invalid || !address) return [{ code: 409, msg: `"${value}" is not a web address, so this cannot become a URL field. Fix that item first` }, null];
+    rewrites.push({ id: row.id, data: { ...row.data, [key]: address } });
+  }
+  return [null, rewrites];
+};
 
 /*
   Properties an extension's own field accepts on update, and what anyone else (the admin UI) may
@@ -160,6 +178,14 @@ export const updateField = async (key, changes = {}, { owner = null, category = 
   }
   if(!Object.keys(updates).length) return [{ code: 400, msg: 'No changes provided' }, null];
 
+  /* Text to a URL: every value already held must be a web address, and is rewritten as the full address. */
+  let rewrites = [];
+  if(targetType === 'url' && existing.type !== 'url'){
+    const [addressError, found] = await addressesOf(key, existing.label);
+    if(addressError) return [addressError, null];
+    rewrites = found;
+  }
+
   const refused = await guard(EVENTS.fieldBeforeUpdate, { field: existing, changes: updates, actor: owner ?? '' });
   if(refused) return [refused, null];
 
@@ -171,6 +197,9 @@ export const updateField = async (key, changes = {}, { owner = null, category = 
         await tx.insert(kempoInventoryCategory)
           .values({ id: newId(), key: targetScope, name: targetName, image: null, created: now, updated: now })
           .onConflictDoNothing();
+      }
+      for(const rewrite of rewrites){
+        await tx.update(kempoInventoryItem).set({ data: rewrite.data }).where(eq(kempoInventoryItem.id, rewrite.id));
       }
       const [updated] = await tx.update(kempoInventoryField).set(updates)
         .where(and(eq(kempoInventoryField.key, key), eq(kempoInventoryField.category, existing.category))).returning();
