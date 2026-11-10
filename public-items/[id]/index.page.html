@@ -45,6 +45,15 @@
 		}
 
 		/* The category is a built-in property of every item; '' means uncategorised. */
+		/* Only web addresses become links; anything else (a javascript: or data: address, say) shows as plain text. */
+		function isWebLink(value){
+			try {
+				const { protocol } = new URL(String(value).trim());
+				return protocol === 'http:' || protocol === 'https:';
+			} catch {
+				return false;
+			}
+		}
 		function categoryOf(item){ return (item.category ?? '').trim(); }
 		function categoryHref(name){ return name ? `/category?name=${encodeURIComponent(name)}` : '/category?uncategorised=1'; }
 		function tagChips(tags){ return tags?.length ? html`<div class="tag-list">${tags.map(tag => html`<a class="tag-chip" href="/search?tag=${encodeURIComponent(tag)}">${tag}</a>`)}</div>` : ''; }
@@ -112,7 +121,7 @@
 								? html`<span style="display: inline-block; width: 4rem; height: 4rem; vertical-align: middle; margin-right: var(--spacer_h); border: 1px solid var(--c_border); border-radius: var(--radius); background: ${item.fields[f.key]};"></span>${item.fields[f.key]}`
 								: f.type === 'item' && linked[item.fields[f.key]]
 								? html`<a href="/items/${item.fields[f.key]}">${displayValue(f, item.fields[f.key], context)}</a>`
-								: f.type === 'url'
+								: f.type === 'url' && isWebLink(item.fields[f.key])
 									? html`<a href=${item.fields[f.key]} target="_blank" rel="noopener">${item.fields[f.key]}</a>`
 									: f.type === 'longtext'
 									? html`<span style="white-space: pre-wrap;">${item.fields[f.key]}</span>`

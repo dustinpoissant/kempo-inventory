@@ -28,6 +28,11 @@ export const CONVERSIONS = { select: ['text'], text: ['longtext', 'url'] };
 
 export const canConvert = (from, to) => from === to || (CONVERSIONS[from] ?? []).includes(to);
 
+/* A javascript: link runs code when clicked. Browsers ignore spaces and control characters inside the scheme, so they are allowed for. */
+const SCRIPT_SCHEME = /^[\s\x00-\x1f\x7f]*j[\s\x00-\x1f\x7f]*a[\s\x00-\x1f\x7f]*v[\s\x00-\x1f\x7f]*a[\s\x00-\x1f\x7f]*s[\s\x00-\x1f\x7f]*c[\s\x00-\x1f\x7f]*r[\s\x00-\x1f\x7f]*i[\s\x00-\x1f\x7f]*p[\s\x00-\x1f\x7f]*t[\s\x00-\x1f\x7f]*:/i;
+export const hasScriptScheme = value => SCRIPT_SCHEME.test(String(value));
+export const stripScriptScheme = value => String(value).replace(SCRIPT_SCHEME, '');
+
 /*
   A `media` value is a list of ids, each saying where the file lives. A bare id is a kempo-media
   asset; "files:<id>" is a kempo-files file.

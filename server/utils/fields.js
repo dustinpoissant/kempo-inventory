@@ -3,7 +3,7 @@ import { eq, and, asc, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { kempoInventoryField, kempoInventoryItem, kempoInventoryCategory } from '../db/schema.js';
 import { categoryKey, tidyCategory, MAX_CATEGORY } from './categoryLogic.js';
-import { normalizeFieldDefinition, OPTIONAL_TYPES, canConvert, coerceValue } from './fieldTypes.js';
+import { normalizeFieldDefinition, OPTIONAL_TYPES, canConvert, coerceValue, hasScriptScheme, stripScriptScheme } from './fieldTypes.js';
 import { mediaAvailable } from './media.js';
 import { EVENTS, guard, notify } from './hooks.js';
 
@@ -20,10 +20,12 @@ const addressesOf = async (key, label) => {
     .where(sql`${kempoInventoryItem.data}->>${key} IS NOT NULL`);
   const rewrites = [];
   for(const row of rows){
-    const value = row.data[key];
-    if(value === '' || value === null) continue;
-    const [invalid, address] = coerceValue({ type: 'url', label }, value);
-    if(!invalid && address && address !== value) rewrites.push({ id: row.id, data: { ...row.data, [key]: address } });
+    const original = row.data[key];
+    if(original === '' || original === null) continue;
+    const cleaned = hasScriptScheme(original) ? stripScriptScheme(original) : original;
+    const [invalid, address] = coerceValue({ type: 'url', label }, cleaned);
+    const value = !invalid && address ? address : cleaned;
+    if(value !== original) rewrites.push({ id: row.id, data: { ...row.data, [key]: value } });
   }
   return rewrites;
 };
