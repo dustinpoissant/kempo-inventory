@@ -12,8 +12,8 @@ const newId = () => crypto.randomBytes(8).toString('hex');
 const isUniqueViolation = error => (error?.code || error?.cause?.code) === '23505';
 
 /*
-  The values items hold for a key, each checked as a web address. Resolves to [null, rewrites] with the
-  full address of each, or an error naming the first value that is not one.
+  The values items hold for a key, rewritten as full web addresses where they are one. Anything else is left
+  as it is (it still shows as text, and is not made into a link).
 */
 const addressesOf = async (key, label) => {
   const rows = await db.select({ id: kempoInventoryItem.id, data: kempoInventoryItem.data }).from(kempoInventoryItem)
@@ -23,12 +23,10 @@ const addressesOf = async (key, label) => {
     const value = row.data[key];
     if(value === '' || value === null) continue;
     const [invalid, address] = coerceValue({ type: 'url', label }, value);
-    if(invalid || !address) return [{ code: 409, msg: `"${value}" is not a web address, so this cannot become a URL field. Fix that item first` }, null];
-    rewrites.push({ id: row.id, data: { ...row.data, [key]: address } });
+    if(!invalid && address && address !== value) rewrites.push({ id: row.id, data: { ...row.data, [key]: address } });
   }
-  return [null, rewrites];
+  return rewrites;
 };
-
 /*
   Properties an extension's own field accepts on update, and what anyone else (the admin UI) may
   adjust on a field an extension owns. Key and ownership never change after creation, the scope
@@ -178,13 +176,8 @@ export const updateField = async (key, changes = {}, { owner = null, category = 
   }
   if(!Object.keys(updates).length) return [{ code: 400, msg: 'No changes provided' }, null];
 
-  /* Text to a URL: every value already held must be a web address, and is rewritten as the full address. */
-  let rewrites = [];
-  if(targetType === 'url' && existing.type !== 'url'){
-    const [addressError, found] = await addressesOf(key, existing.label);
-    if(addressError) return [addressError, null];
-    rewrites = found;
-  }
+  /* Text to a URL: values that are web addresses are kept as their full address; anything else stays text. */
+  const rewrites = targetType === 'url' && existing.type !== 'url' ? await addressesOf(key, existing.label) : [];
 
   const refused = await guard(EVENTS.fieldBeforeUpdate, { field: existing, changes: updates, actor: owner ?? '' });
   if(refused) return [refused, null];

@@ -113,7 +113,7 @@
 								: f.type === 'item' && linked[item.fields[f.key]]
 								? html`<a href="/items/${item.fields[f.key]}">${displayValue(f, item.fields[f.key], context)}</a>`
 								: f.type === 'url'
-									? html`<a href=${item.fields[f.key]} rel="noopener">${item.fields[f.key]}</a>`
+									? html`<a href=${item.fields[f.key]} target="_blank" rel="noopener">${item.fields[f.key]}</a>`
 									: f.type === 'longtext'
 									? html`<span style="white-space: pre-wrap;">${item.fields[f.key]}</span>`
 									: displayValue(f, item.fields[f.key], context)}</dd>`)}
