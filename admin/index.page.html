@@ -23,6 +23,7 @@ locked: true
   <script type="module" src="/inventory/components/RowAction.js"></script>
   <script type="module" src="/inventory/components/FieldsManager.js"></script>
   <script type="module" src="/inventory/components/ToolbarControl.js"></script>
+  <script type="module" src="/admin/components/settings/SettingsPanel.js"></script>
 
   <h1 class="mb">Inventory</h1>
 
@@ -30,6 +31,7 @@ locked: true
     <k-tab id="itemsTab" for="items">Items</k-tab>
     <k-tab id="categoriesTab" for="categories">Categories</k-tab>
     <k-tab id="fieldsTab" for="fields">Fields</k-tab>
+    <k-tab for="settings">Settings</k-tab>
 
     <k-tab-content id="itemsContent" name="items">
   <!--
@@ -106,6 +108,11 @@ locked: true
         </div>
       </k-table>
       <p id="uncategorised" class="mt tc-muted"></p>
+    </k-tab-content>
+
+    <k-tab-content name="settings" class="pt">
+      <p class="tc-muted mb">How quantities and item photos behave for everyone who uses the inventory. A change applies the next time it is used.</p>
+      <k-settings-panel owner="kempo-inventory"></k-settings-panel>
     </k-tab-content>
 
     <k-tab-content id="fieldsContent" name="fields">
