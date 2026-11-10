@@ -7,7 +7,7 @@ export default async (request, response) => {
 
   const body = request.body || {};
   const changes = {};
-  for(const property of ['label', 'description', 'required', 'listed', 'suggest', 'options', 'position', 'type', 'imageRatio', 'imageMax']){
+  for(const property of ['label', 'description', 'required', 'listed', 'suggest', 'options', 'position', 'type', 'imageRatio', 'imageMax', 'category']){
     if(body[property] !== undefined) changes[property] = body[property];
   }
   const [error, field] = await updateField(request.params.key, changes, { category: request.query.category ?? '' });

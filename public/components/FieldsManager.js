@@ -206,7 +206,7 @@ export default class FieldsManager extends ShadowComponent {
         </div>
         <div class="mb">
           <label class="d-b mb-sm" for="fld-scope">Applies to</label>
-          <select id="fld-scope" class="full" ?disabled=${editing}>
+          <select id="fld-scope" class="full" ?disabled=${managed}>
             <option value="" ?selected=${editing ? !field.category : scope === '' || scope === '*'}>Every item</option>
             ${categories.map(c => html`<option value=${c.name} ?selected=${editing ? c.key === field.category : c.key === scope}>Only ${c.name}</option>`)}
           </select>
@@ -282,6 +282,7 @@ export default class FieldsManager extends ShadowComponent {
         if(!managed){
           data.required = $dialog.querySelector('#fld-required').value === true;
           data.options = value('#fld-options').split('\n').map(o => o.trim()).filter(Boolean);
+          data.category = value('#fld-scope');
         }
         if(!data.label){
           Toast.error('A label is required');

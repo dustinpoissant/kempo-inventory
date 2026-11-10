@@ -4,6 +4,10 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- A field's **Applies to** can be changed when the field is edited (it was fixed at creation). Its values move with it, and the change is refused if the key is already used in the new scope. Only the extension that manages a field can change its scope; the admin cannot.
+
 ### Added
 
 - **An `inventory-item-tabs` location** on the admin item page. The page is now tabbed (Details first), and an extension adds its own tab with an admin/*.global.html file.

@@ -40,7 +40,7 @@ The item list, its filters and the item form are all built from the field list. 
 
 ### Fields for one category
 
-A field applies either to **every item** (the default) or to **one category**. Make a paint's "Finish" (Matte, Satin, Gloss) for the Paint category and it only appears on items whose category is Paint; filament can have its own "Diameter" and nothing else sees it. Choose what a field **Applies to** when you create it (**Inventory > Categories** has a gear button per category that opens its fields). The item form shows the default fields plus those of the typed category, and swaps them as the category changes.
+A field applies either to **every item** (the default) or to **one category**. Make a paint's "Finish" (Matte, Satin, Gloss) for the Paint category and it only appears on items whose category is Paint; filament can have its own "Diameter" and nothing else sees it. Choose what a field **Applies to** when you create it, and change it later by editing the field (its values move with it; the change is refused if the key is already used where the field is going). **Inventory > Categories** has a gear button per category that opens its fields. The item form shows the default fields plus those of the typed category, and swaps them as the category changes.
 
 - A key is unique within its category, so two categories can each have a "finish". A category cannot reuse a key a default field has (and the other way round), because both would be stored under the same name on its items.
 - Moving an item to another category keeps the values it held for fields it no longer shows. They are hidden, not deleted, and come back if the item returns.

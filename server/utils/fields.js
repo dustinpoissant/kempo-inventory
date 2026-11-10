@@ -13,10 +13,10 @@ const isUniqueViolation = error => (error?.code || error?.cause?.code) === '2350
 
 /*
   Properties an extension's own field accepts on update, and what anyone else (the admin UI) may
-  adjust on a field an extension owns. Key and ownership never change after creation, and the type
-  only changes where nothing can be lost (see CONVERSIONS in fieldTypes.js).
+  adjust on a field an extension owns. Key and ownership never change after creation, the scope
+  (`category`) can, and the type only changes where nothing can be lost (see CONVERSIONS in fieldTypes.js).
 */
-const OWNER_EDITABLE = ['label', 'description', 'required', 'listed', 'suggest', 'options', 'position', 'type', 'imageRatio', 'imageMax'];
+const OWNER_EDITABLE = ['label', 'description', 'required', 'listed', 'suggest', 'options', 'position', 'type', 'imageRatio', 'imageMax', 'category'];
 const ANYONE_EDITABLE = ['label', 'description', 'listed', 'suggest', 'position', 'imageRatio', 'imageMax'];
 
 /*
@@ -61,6 +61,22 @@ export const itemsInScope = category => category
   : sql`true`;
 
 /*
+  Items in a category hold the default fields and that category's under one set of names, so a
+  key cannot be reused where it would collide: a default field's key is taken in every category,
+  and a category's key is taken in the default scope. `exclude` is the scope the field is leaving.
+*/
+const keyClash = async (key, scope, exclude = null) => {
+  const [clash] = await db.select({ category: kempoInventoryField.category }).from(kempoInventoryField).where(and(
+    eq(kempoInventoryField.key, key),
+    exclude === null ? sql`true` : sql`${kempoInventoryField.category} <> ${exclude}`,
+    scope ? sql`${kempoInventoryField.category} in ('', ${scope})` : sql`true`,
+  ));
+  if(!clash) return null;
+  const where = clash.category === scope ? (scope ? 'this category' : 'the default fields') : (scope ? 'the default fields' : 'a category');
+  return { code: 409, msg: `A field with the key "${key}" already exists in ${where}` };
+};
+
+/*
   Creates a field. `owner` is '' for a field made by a person in the admin, or the extension's
   name for one it registers itself.
 */
@@ -80,19 +96,8 @@ export const createField = async (definition, { owner = '' } = {}) => {
   }
 
   try {
-    /*
-      Items in a category hold the default fields and that category's under one set of names, so a
-      key cannot be reused where it would collide: a default field's key is taken in every category,
-      and a category's key is taken in the default scope.
-    */
-    const clash = await db.select({ category: kempoInventoryField.category }).from(kempoInventoryField).where(and(
-      eq(kempoInventoryField.key, normalized.key),
-      scope ? sql`${kempoInventoryField.category} in ('', ${scope})` : sql`true`,
-    ));
-    if(clash.length){
-      const where = clash[0].category === scope ? (scope ? 'this category' : 'the default fields') : (scope ? 'the default fields' : 'a category');
-      return [{ code: 409, msg: `A field with the key "${normalized.key}" already exists in ${where}` }, null];
-    }
+    const clash = await keyClash(normalized.key, scope);
+    if(clash) return [clash, null];
 
     const field = await db.transaction(async tx => {
       if(scope){
@@ -119,13 +124,18 @@ export const updateField = async (key, changes = {}, { owner = null, category = 
   const [lookupError, existing] = await getField(key, category);
   if(lookupError) return [lookupError, null];
 
+  const targetName = changes.category === undefined ? undefined : tidyCategory(changes.category);
+  const targetScope = targetName === undefined ? existing.category : categoryKey(targetName);
+  const scopeChanged = targetScope !== existing.category;
+  if(scopeChanged && targetName.length > MAX_CATEGORY) return [{ code: 400, msg: `A category name must be ${MAX_CATEGORY} characters or fewer` }, null];
+
   const targetType = changes.type ?? existing.type;
   if(!canConvert(existing.type, targetType)){
     return [{ code: 409, msg: `A ${existing.type} field cannot be changed to ${targetType}. Delete it and create a new one instead` }, null];
   }
   const isOwner = existing.owner === (owner ?? '');
   const allowed = isOwner ? OWNER_EDITABLE : ANYONE_EDITABLE;
-  const rejected = Object.keys(changes).filter(k => k !== 'key' && k !== 'category' && !(k === 'type' && targetType === existing.type) && !allowed.includes(k));
+  const rejected = Object.keys(changes).filter(k => k !== 'key' && !(k === 'category' && !scopeChanged) && !(k === 'type' && targetType === existing.type) && !allowed.includes(k));
   if(rejected.length){
     return [{ code: 403, msg: `${rejected.join(', ')} can only be changed by ${existing.owner ? `the "${existing.owner}" extension` : 'the field\'s owner'}` }, null];
   }
@@ -135,7 +145,7 @@ export const updateField = async (key, changes = {}, { owner = null, category = 
 
   const updates = {};
   for(const property of allowed){
-    if(changes[property] !== undefined) updates[property] = normalized[property];
+    if(property !== 'category' && changes[property] !== undefined) updates[property] = normalized[property];
   }
   if(targetType !== existing.type){
     /* Converting: the type changes, and what only made sense for the old type goes with it. */
@@ -143,14 +153,29 @@ export const updateField = async (key, changes = {}, { owner = null, category = 
     updates.options = normalized.options;
     updates.suggest = normalized.suggest;
   }
+  if(scopeChanged){
+    const clash = await keyClash(existing.key, targetScope, existing.category);
+    if(clash) return [clash, null];
+    updates.category = targetScope;
+  }
   if(!Object.keys(updates).length) return [{ code: 400, msg: 'No changes provided' }, null];
 
   const refused = await guard(EVENTS.fieldBeforeUpdate, { field: existing, changes: updates, actor: owner ?? '' });
   if(refused) return [refused, null];
 
   try {
-    const [field] = await db.update(kempoInventoryField).set(updates)
-      .where(and(eq(kempoInventoryField.key, key), eq(kempoInventoryField.category, existing.category))).returning();
+    const field = await db.transaction(async tx => {
+      if(scopeChanged && targetScope){
+        /* Moving into a category: it has to exist as a record, as it does when a field is created there. */
+        const now = new Date();
+        await tx.insert(kempoInventoryCategory)
+          .values({ id: newId(), key: targetScope, name: targetName, image: null, created: now, updated: now })
+          .onConflictDoNothing();
+      }
+      const [updated] = await tx.update(kempoInventoryField).set(updates)
+        .where(and(eq(kempoInventoryField.key, key), eq(kempoInventoryField.category, existing.category))).returning();
+      return updated;
+    });
     await notify(EVENTS.fieldUpdated, { field, previous: existing, actor: owner ?? '' });
     return [null, field];
   } catch {
