@@ -162,7 +162,7 @@ locked: true
       user-supplied text itself.
     */
     const decorate = (item, ctx) => {
-      const record = { ...item, qtyText: String(item.quantity), tagsText: item.tags.join(', '), ownerText: item.owner, ...(can('items:update') && { _url: `/admin/extension/kempo-inventory/edit?id=${encodeURIComponent(item.id)}` }) };
+      const record = { ...item, qtyText: [String(item.quantity), item.effectiveUnit].filter(Boolean).join(' '), tagsText: item.tags.join(', '), ownerText: item.owner, ...(can('items:update') && { _url: `/admin/extension/kempo-inventory/edit?id=${encodeURIComponent(item.id)}` }) };
       /* Only the fields that apply to this item's category; a column another category's items fill stays blank here. */
       for(const field of applicableFields(fields, item.category).filter(f => f.listed)) record[`f_${field.key}`] = displayValue(field, item.fields[field.key], ctx);
       return record;
@@ -339,6 +339,12 @@ locked: true
             <textarea id="cat-description" class="full" rows="3" maxlength="500" .value=${category?.description ?? ''}></textarea>
           </div>
           <div class="mb">
+            <label class="d-b mb-sm" for="cat-unit">Unit
+              <small class="d-b tc-muted">What items in this category count in, such as oz or g. An item with its own unit keeps it.</small>
+            </label>
+            <input type="text" id="cat-unit" class="full" maxlength="20" .value=${category?.unit ?? ''}>
+          </div>
+          <div class="mb">
             <label class="d-b mb-sm" for="cat-tags">Tags</label>
             <k-tags id="cat-tags" .value=${tagsValue(category?.tags)} .getSuggestions=${suggestTags} @input=${lowerTagInput} @change=${lowerTagChips}></k-tags>
           </div>
@@ -362,6 +368,7 @@ locked: true
             description: $dialog.querySelector('#cat-description').value,
             tags: readTags($dialog.querySelector('#cat-tags')),
             image: $dialog.querySelector('#cat-image').value[0] ?? null,
+            unit: $dialog.querySelector('#cat-unit').value,
           };
 
           let error, result;

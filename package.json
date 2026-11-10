@@ -29,6 +29,7 @@
   "files": [
     "admin",
     "public",
+    "public-items",
     "server",
     "install.js",
     "update.js",

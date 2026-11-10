@@ -93,7 +93,7 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
   };
 
   render(html`
-    ${locked ? html`<p class="mb tc-muted">Managed by the ${item.owner} extension. Its SKU, name and category can only be changed there; everything else, including quantity, you can edit here.</p>` : ''}
+    ${locked ? html`<p class="mb tc-muted">Managed by the ${item.owner} extension. Its SKU, name and category can only be changed there; everything else you can edit here, and quantity in the Quantity tab.</p>` : ''}
     <div class="d-f mb" style="gap: var(--spacer);">
       <div class="flex">
         <label class="d-b mb-sm" for="dlg-sku">SKU *</label>
@@ -113,6 +113,12 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
         @focusin=${e => offerCategories(e.currentTarget)}
         @search=${showFields} @select=${() => setTimeout(showFields)} @change=${() => setTimeout(showFields)} @focusout=${() => setTimeout(showFields, 150)}></k-combobox>
     </div>
+    <div class="mb">
+      <label class="d-b mb-sm" for="dlg-unit">Unit
+        <small class="d-b tc-muted">What the quantity counts, such as oz or g. Leave empty to use the category's unit.</small>
+      </label>
+      <input type="text" id="dlg-unit" class="full" maxlength="20" .value=${item?.unit ?? defaults.unit ?? ''}>
+    </div>
     <div class="mb"><label class="d-b mb-sm" for="dlg-tags">Tags</label><k-tags id="dlg-tags" .value=${tagsValue(item?.tags ?? defaults.tags)} .getSuggestions=${suggestTags} @input=${lowerTagInput} @change=${lowerTagChips}></k-tags></div>
     <div class="mb"><label class="d-b mb-sm" for="dlg-description">Description</label><textarea id="dlg-description" class="full" rows="2" .value=${item?.description ?? ''}></textarea></div>
     <div id="dlg-fields"></div>
@@ -131,6 +137,7 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
       description: $root.querySelector('#dlg-description')?.value ?? '',
       category: $root.querySelector('#dlg-category')?.value ?? '',
       quantity: $root.querySelector('#dlg-qty')?.value ?? '',
+      unit: $root.querySelector('#dlg-unit')?.value ?? '',
       tags: readTags($root.querySelector('#dlg-tags')),
       values,
     });
@@ -154,6 +161,7 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
       name: $root.querySelector('#dlg-name').value.trim(),
       description: $root.querySelector('#dlg-description').value,
       category: ($root.querySelector('#dlg-category').value || '').trim(),
+      unit: $root.querySelector('#dlg-unit').value.trim(),
       tags: readTags($root.querySelector('#dlg-tags')),
       fields: values,
     };
@@ -170,6 +178,7 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
       /* Blank fields are left out on create so hooks can tell "not provided" from a value. */
       data.fields = Object.fromEntries(Object.entries(values).filter(([, v]) => v !== '' && !(Array.isArray(v) && !v.length)));
       if(!data.category) delete data.category;
+      if(!data.unit) delete data.unit;
       if(!data.tags.length) delete data.tags;
       data.quantity = askQuantity ? Number($root.querySelector('#dlg-qty').value || 0) : Number(defaults.quantity ?? 0);
       [error, saved] = await createItem(data);

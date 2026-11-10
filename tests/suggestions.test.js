@@ -53,7 +53,7 @@ test('categories merge spellings, count together, and sort by name', () => {
 
 test('a stored record supplies the name and image', () => {
   const found = groupCategories([{ value: 'paint', uses: 4 }, { value: 'Brush', uses: 1 }], [{ key: 'paint', name: 'Paints', image: 'abc' }]);
-  assert.deepEqual(found.find(c => c.key === 'paint'), { key: 'paint', name: 'Paints', count: 4, image: 'abc', description: '', tags: [], owner: '' });
+  assert.deepEqual(found.find(c => c.key === 'paint'), { key: 'paint', name: 'Paints', count: 4, image: 'abc', unit: '', description: '', tags: [], owner: '' });
   assert.equal(found.find(c => c.key === 'brush').image, null, 'no record, no image');
 });
 

@@ -2,10 +2,11 @@ import db from 'kempo/server/db/index.js';
 import { asc } from 'drizzle-orm';
 import { kempoInventoryItem, kempoInventoryCategory } from '../db/schema.js';
 import { getFields } from './fields.js';
-import { getItemBySku, createItem, updateItem, adjustQuantity } from './items.js';
+import { getItemBySku, createItem, updateItem, adjustQuantity, decimalsAllowed } from './items.js';
 import { getCategories, saveCategory } from './categories.js';
 import { applicableFields, coerceValues } from './fieldTypes.js';
 import { normalizeTags } from './tags.js';
+import { toQuantity } from './quantity.js';
 import { tidyCategory, categoryKey, MAX_CATEGORY } from './categoryLogic.js';
 import { readMedia } from './media.js';
 
@@ -81,12 +82,13 @@ export const buildExport = async ({ withMedia = false } = {}) => {
         values[field.key] = value;
       }
     }
-    return { sku: row.sku, name: row.name, category: row.category, quantity: row.quantity, tags: row.tags ?? [], description: row.description, fields: values };
+    return { sku: row.sku, name: row.name, category: row.category, quantity: row.quantity, unit: row.unit ?? '', tags: row.tags ?? [], description: row.description, fields: values };
   });
 
   const categories = categoryRows.map(row => ({
     name: row.name,
     description: row.description,
+    unit: row.unit ?? '',
     tags: row.tags ?? [],
     ...(row.image && pathOf.has(row.image) ? { image: pathOf.get(row.image) } : {}),
   }));
@@ -149,12 +151,14 @@ export const importData = async ({ items = [], categories = [], onMatch = 'skip'
     if(given(row.description)) changes.description = String(row.description);
     if(given(row.tags)) changes.tags = row.tags;
     if(given(row.image)) changes.image = row.image;
+    if(given(row.unit)) changes.unit = String(row.unit);
     const [error] = await saveCategory(name, changes, { userId });
     if(error){ result.action = 'error'; result.message = error.msg; summary.errors++; continue; }
     known.add(categoryKey(name));
     exists ? summary.categoriesUpdated++ : summary.categoriesCreated++;
   }
 
+  const decimals = await decimalsAllowed();
   for(const [index, row] of items.entries()){
     const result = { row: index + 1, sku: String(row?.sku ?? '').trim(), name: String(row?.name ?? '').trim(), action: '', message: '' };
     results.push(result);
@@ -174,8 +178,8 @@ export const importData = async ({ items = [], categories = [], onMatch = 'skip'
     }
     let quantity;
     if(given(row.quantity)){
-      quantity = Number(row.quantity);
-      if(!Number.isInteger(quantity) || quantity < 0){ fail(result, 'Quantity must be a non-negative whole number'); continue; }
+      quantity = toQuantity(row.quantity, decimals);
+      if(Number.isNaN(quantity) || quantity < 0){ fail(result, decimals ? 'Quantity must be a non-negative number' : 'Quantity must be a non-negative whole number'); continue; }
     }
     if(!existing && !result.name){ fail(result, 'Missing name'); continue; }
 
@@ -206,6 +210,7 @@ export const importData = async ({ items = [], categories = [], onMatch = 'skip'
       if(given(row.name)) changes.name = result.name;
       if(given(row.description)) changes.description = String(row.description);
       if(given(row.category)) changes.category = category;
+      if(given(row.unit)) changes.unit = String(row.unit);
       if(tags !== undefined) changes.tags = tags;
       const [error] = await updateItem(existing.id, { ...changes, userId });
       if(error && !(error.code === 400 && error.msg === 'No changes provided')){ fail(result, error.msg); continue; }
@@ -220,7 +225,7 @@ export const importData = async ({ items = [], categories = [], onMatch = 'skip'
       if(dryRun){ summary.created++; continue; }
       const [error, created] = await createItem({
         sku: result.sku, name: result.name, description: given(row.description) ? String(row.description) : '',
-        category, tags: tags ?? [], quantity: quantity ?? 0, fields: coerced, userId,
+        category, unit: given(row.unit) ? String(row.unit) : '', tags: tags ?? [], quantity: quantity ?? 0, fields: coerced, userId,
       });
       if(error){ fail(result, error.msg); continue; }
       summary.created++;

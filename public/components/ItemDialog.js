@@ -71,12 +71,20 @@ export const openAdjustDialog = async ({ item, onSaved = () => {} } = {}) => {
     <div class="p" style=${SCROLL}>
       <p class="mb">Current quantity: <strong>${data.item.quantity}</strong></p>
       <div class="mb">
-        <label class="d-b mb-sm" for="dlg-delta">Change (negative removes quantity)</label>
-        <input type="number" id="dlg-delta" class="full" step="1" required>
+        <label class="d-b mb-sm" for="dlg-mode">How</label>
+        <select id="dlg-mode" class="full" @change=${event => { $dialog.querySelector('#dlg-amount-label').textContent = event.target.value === 'set' ? 'Count it should be now' : 'Change (negative removes quantity)'; }}>
+          <option value="change">Add or remove</option>
+          <option value="set" selected>Set to</option>
+        </select>
       </div>
       <div class="mb">
-        <label class="d-b mb-sm" for="dlg-reason">Reason</label>
+        <label class="d-b mb-sm" for="dlg-delta" id="dlg-amount-label">Count it should be now</label>
+        <input type="number" id="dlg-delta" class="full" step="any" required>
+      </div>
+      <div class="mb">
+        <label class="d-b mb-sm" for="dlg-reason">Reason (optional)</label>
         <select id="dlg-reason" class="full">
+          <option value="" selected>No reason</option>
           <option value="received">Received</option>
           <option value="sold">Sold / used</option>
           <option value="damaged">Damaged / lost</option>
@@ -97,13 +105,15 @@ export const openAdjustDialog = async ({ item, onSaved = () => {} } = {}) => {
     cancelText: 'Close',
     confirmAction: async event => {
       event.keepDialogOpen = true;
-      const delta = Number($dialog.querySelector('#dlg-delta').value);
-      if(!Number.isInteger(delta) || delta === 0){
-        Toast.error('Enter a non-zero whole number');
+      const setting = $dialog.querySelector('#dlg-mode').value === 'set';
+      const raw = $dialog.querySelector('#dlg-delta').value;
+      const amount = Number(raw);
+      if(raw.trim() === '' || !Number.isFinite(amount) || (setting ? amount < 0 : amount === 0)){
+        Toast.error(setting ? 'Enter the count, zero or more' : 'Enter a number that is not zero');
         return;
       }
       const [adjustError, adjusted] = await adjustQuantity(item.id, {
-        delta,
+        ...(setting ? { set: amount } : { delta: amount }),
         reason: $dialog.querySelector('#dlg-reason').value,
         note: $dialog.querySelector('#dlg-note').value,
       });

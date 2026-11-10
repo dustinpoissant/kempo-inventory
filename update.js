@@ -8,6 +8,14 @@ import { getSetting, setSetting, deleteSetting } from 'kempo/server/sdk.js';
   this on a database that already has the change is harmless.
 */
 export default async () => {
+  // Next: quantities can have decimal places (the decimal_quantity setting), and items and categories can have a unit. A quantity column changes type only while it is still an integer.
+  for(const [table, column] of [['kempoInventoryItem', 'quantity'], ['kempoInventoryMovement', 'delta'], ['kempoInventoryMovement', 'quantityAfter']]){
+    const [column_] = [...await db.execute(sql`SELECT data_type AS "type" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ${table} AND column_name = ${column}`)];
+    if(column_?.type === 'integer') await db.execute(sql.raw(`ALTER TABLE "${table}" ALTER COLUMN "${column}" TYPE numeric(14,4) USING "${column}"::numeric`));
+  }
+  await db.execute(sql`ALTER TABLE "kempoInventoryItem" ADD COLUMN IF NOT EXISTS "unit" text NOT NULL DEFAULT ''`);
+  await db.execute(sql`ALTER TABLE "kempoInventoryCategory" ADD COLUMN IF NOT EXISTS "unit" text NOT NULL DEFAULT ''`);
+
   // Stock became quantity everywhere. The permission to change it was kempo-inventory:stock:adjust: move every grant to the new name, so nobody loses the right.
   const OLD = 'kempo-inventory:stock:adjust';
   const NEW = 'kempo-inventory:quantity:adjust';

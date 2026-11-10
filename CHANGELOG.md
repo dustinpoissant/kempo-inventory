@@ -4,7 +4,16 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Units.** Items and categories have a unit (oz, g, or anything up to 20 characters). An item's own unit overrides its category's. The unit is shown beside quantities on the item's Quantity tab and in the admin list, and it is kept by export and import. Nothing is built in: a unit is only what someone types.
+- **Decimal quantities.** The `decimal_quantity` setting (off by default) allows quantities with up to four decimal places, such as 2.5 oz. Off, quantities stay whole numbers. Turning it on does not change quantities already stored. Quantities are now stored with decimal places, so this update changes the quantity columns' type on existing databases.
+- **Set to a count.** The Quantity tab and the admin Adjust dialog can set the count outright; the change is worked out from the count held at the moment of the write. Setting the count it already has records nothing.
+- **Item edit page Quantity tab** on the admin edit page and the item's edit page on the site: the count, add or remove, and the history.
+
 ### Changed
+
+- **The reason is optional.** A quantity change with no reason is stored with no reason, and the history shows nothing in the Reason column. Changes made through the API without a `reason` still record `adjustment`.
 
 - A field's **Applies to** can be changed when the field is edited (it was fixed at creation). Its values move with it, and the change is refused if the key is already used in the new scope. Only the extension that manages a field can change its scope; the admin cannot.
 

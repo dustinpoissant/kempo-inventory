@@ -3,6 +3,7 @@ import { sql, eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { kempoInventoryItem, kempoInventoryCategory, kempoInventoryField } from '../db/schema.js';
 import { normalizeTags, tidyTag } from './tags.js';
+import { checkUnit } from './quantity.js';
 import { categoryKey, groupCategories, tidyCategory, MAX_CATEGORY, MAX_DESCRIPTION } from './categoryLogic.js';
 import { coerceValue } from './fieldTypes.js';
 import { getAssets, checkAssets } from './media.js';
@@ -75,12 +76,17 @@ export const getCategories = async ({ includeEmpty = false, q = '', tag = '', ow
   by that owner; anyone can still change its image, description and tags. `owner` here is the
   extension making the call ('' for a person), and a category created by this call belongs to it.
 */
-export const saveCategory = async (name, { newName, image, description, tags } = {}, { userId = '', owner = '' } = {}) => {
+export const saveCategory = async (name, { newName, image, description, tags, unit } = {}, { userId = '', owner = '' } = {}) => {
   const displayName = tidyCategory(name);
   const key = categoryKey(displayName);
   if(!key) return [{ code: 400, msg: 'A category name is required' }, null];
 
   const changes = {};
+  if(unit !== undefined){
+    const [unitError, cleanUnit] = checkUnit(unit);
+    if(unitError) return [unitError, null];
+    changes.unit = cleanUnit;
+  }
   if(description !== undefined){
     const text = String(description ?? '').trim();
     if(text.length > MAX_DESCRIPTION) return [{ code: 400, msg: `A description must be ${MAX_DESCRIPTION} characters or fewer` }, null];
@@ -162,6 +168,7 @@ export const saveCategory = async (name, { newName, image, description, tags } =
       /* What the category ends up holding: this call's changes, then the existing record, then the one merged away. */
       const merged = {
         image: changes.image !== undefined ? changes.image : (target?.image ?? source?.image ?? null),
+        unit: changes.unit !== undefined ? changes.unit : (target?.unit || source?.unit || ''),
         description: changes.description !== undefined ? changes.description : (target?.description || source?.description || ''),
         /* Merging two categories keeps the tags of both. */
         tags: changes.tags !== undefined ? changes.tags : [...new Set([...(target?.tags ?? []), ...(source && source !== target ? source.tags ?? [] : [])])],
@@ -182,7 +189,7 @@ export const saveCategory = async (name, { newName, image, description, tags } =
     if(outcome.refused) return [outcome.refused, null];
 
     await notify(EVENTS.categoryUpdated, { category: outcome.row, previous: outcome.previous, moved: outcome.moved, userId, actor: owner });
-    return [null, { name: outcome.row.name, key: outcome.row.key, image: outcome.row.image, description: outcome.row.description, tags: outcome.row.tags ?? [], owner: outcome.row.owner, moved: outcome.moved }];
+    return [null, { name: outcome.row.name, key: outcome.row.key, image: outcome.row.image, unit: outcome.row.unit, description: outcome.row.description, tags: outcome.row.tags ?? [], owner: outcome.row.owner, moved: outcome.moved }];
   } catch {
     return [{ code: 500, msg: 'Failed to save the category' }, null];
   }

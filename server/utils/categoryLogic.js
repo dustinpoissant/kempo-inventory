@@ -43,11 +43,11 @@ export const groupCategories = (rows, records = [], { includeEmpty = false } = {
     const record = recordByKey.get(key);
     const spelling = [...entry.spellings.entries()]
       .sort((a, b) => b[1] - a[1] || Number(startsUpper(b[0])) - Number(startsUpper(a[0])) || a[0].localeCompare(b[0]))[0][0];
-    return { key, name: record?.name ?? spelling, count: entry.count, image: record?.image ?? null, description: record?.description ?? '', tags: record?.tags ?? [], owner: record?.owner ?? '' };
+    return { key, name: record?.name ?? spelling, count: entry.count, image: record?.image ?? null, unit: record?.unit ?? '', description: record?.description ?? '', tags: record?.tags ?? [], owner: record?.owner ?? '' };
   });
 
   const empty = includeEmpty
-    ? records.filter(record => !byKey.has(record.key)).map(record => ({ key: record.key, name: record.name, count: 0, image: record.image ?? null, description: record.description ?? '', tags: record.tags ?? [], owner: record.owner ?? '' }))
+    ? records.filter(record => !byKey.has(record.key)).map(record => ({ key: record.key, name: record.name, count: 0, image: record.image ?? null, unit: record.unit ?? '', description: record.description ?? '', tags: record.tags ?? [], owner: record.owner ?? '' }))
     : [];
 
   return [...used, ...empty].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));

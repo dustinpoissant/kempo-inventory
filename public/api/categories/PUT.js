@@ -11,7 +11,7 @@ export default async (request, response) => {
 
   const body = request.body || {};
   const changes = {};
-  for(const property of ['newName', 'image', 'description', 'tags']){
+  for(const property of ['newName', 'image', 'description', 'tags', 'unit']){
     if(property in body) changes[property] = body[property];
   }
   const [error, category] = await saveCategory(body.name, changes, { userId: auth.userId });

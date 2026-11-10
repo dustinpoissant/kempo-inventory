@@ -1,4 +1,9 @@
-import { pgTable, text, timestamp, integer, boolean, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, numeric, boolean, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
+
+/*
+  A quantity has four decimal places at most. Whole numbers unless the decimal_quantity setting allows fractions.
+*/
+const quantityColumn = name => numeric(name, { precision: 14, scale: 4, mode: 'number' });
 
 /*
   An item has only the core columns. Everything else lives in `data`, keyed by the `key` of a
@@ -10,7 +15,8 @@ export const kempoInventoryItem = pgTable('kempoInventoryItem', {
   name: text('name').notNull(),
   description: text('description').notNull().default(''),
   category: text('category').notNull().default(''), // built in and optional; '' means uncategorised
-  quantity: integer('quantity').notNull().default(0),
+  quantity: quantityColumn('quantity').notNull().default(0),
+  unit: text('unit').notNull().default(''), // built in and optional: what the quantity counts (oz, g); '' uses the category's unit
   tags: jsonb('tags').notNull().default([]), // built in: short lower-case labels search finds
   data: jsonb('data').notNull().default({}),
   owner: text('owner').notNull().default(''), // '' for items people manage, or the extension that created it; see ownership.js
@@ -47,8 +53,8 @@ export const kempoInventoryField = pgTable('kempoInventoryField', {
 export const kempoInventoryMovement = pgTable('kempoInventoryMovement', {
   id: text('id').primaryKey(),
   itemId: text('itemId').notNull(),
-  delta: integer('delta').notNull(),
-  quantityAfter: integer('quantityAfter').notNull(),
+  delta: quantityColumn('delta').notNull(),
+  quantityAfter: quantityColumn('quantityAfter').notNull(),
   reason: text('reason').notNull().default('adjustment'),
   note: text('note').notNull().default(''),
   userId: text('userId').notNull().default(''),
@@ -66,6 +72,7 @@ export const kempoInventoryCategory = pgTable('kempoInventoryCategory', {
   key: text('key').notNull(),
   name: text('name').notNull(),
   image: text('image'), // a stored media id, as held by a media field
+  unit: text('unit').notNull().default(''), // what items in the category count in, unless an item has its own
   description: text('description').notNull().default(''),
   tags: jsonb('tags').notNull().default([]),
   owner: text('owner').notNull().default(''), // '' for categories people manage, or the extension that registered it

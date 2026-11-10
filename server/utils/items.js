@@ -1,21 +1,34 @@
 import db from 'kempo/server/db/index.js';
 import { eq, and, or, ilike, sql, desc, asc, inArray } from 'drizzle-orm';
 import crypto from 'crypto';
-import { kempoInventoryItem, kempoInventoryMovement } from '../db/schema.js';
+import { getSetting } from 'kempo/server/sdk.js';
+import { kempoInventoryItem, kempoInventoryMovement, kempoInventoryCategory } from '../db/schema.js';
 import { getFields } from './fields.js';
 import { coerceValues, applicableFields, KEY_PATTERN, isEmpty } from './fieldTypes.js';
 import { EVENTS, guard, notify } from './hooks.js';
 import { tidyCategory, categoryKey, MAX_CATEGORY } from './categoryLogic.js';
 import { normalizeTags, tidyTag } from './tags.js';
+import { toQuantity, checkUnit } from './quantity.js';
 import { getAssets, checkAssets } from './media.js';
 import { lockedItemChanges, notYours, ownerLabel } from './ownership.js';
 
 const newId = () => crypto.randomBytes(8).toString('hex');
 
-const toInt = (value, fallback) => {
-  if(isEmpty(value)) return fallback;
-  const n = Number(value);
-  return Number.isInteger(n) ? n : NaN;
+/* Whether quantities may have decimal places (the decimal_quantity setting). */
+export const decimalsAllowed = async () => {
+  const [, value] = await getSetting('kempo-inventory', 'decimal_quantity', false);
+  return value === true || value === 'true';
+};
+
+/*
+  Each item's unit: its own if it has one, otherwise its category's. Read items are given `unit`
+  (its own) and `effectiveUnit` (the one to show).
+*/
+const withEffectiveUnits = async items => {
+  const categoryUnits = new Map();
+  const categories = await db.select({ key: kempoInventoryCategory.key, unit: kempoInventoryCategory.unit }).from(kempoInventoryCategory);
+  for(const category of categories) if(category.unit) categoryUnits.set(category.key, category.unit);
+  return items.map(item => ({ ...item, effectiveUnit: item.unit || categoryUnits.get(categoryKey(item.category)) || '' }));
 };
 
 const isUniqueViolation = error => (error?.code || error?.cause?.code) === '23505';
@@ -30,6 +43,7 @@ const shape = row => row && ({
   description: row.description,
   category: row.category,
   quantity: row.quantity,
+  unit: row.unit ?? '',
   tags: row.tags ?? [],
   fields: row.data ?? {},
   owner: row.owner,
@@ -132,7 +146,7 @@ export const getItems = async ({ q, category, tag, uncategorised = false, filter
     const rows = await db.select().from(kempoInventoryItem).where(where)
       .orderBy(asc(kempoInventoryItem.name), asc(kempoInventoryItem.id)).limit(limit).offset(offset);
     const [{ total }] = await db.select({ total: sql`count(*)::int` }).from(kempoInventoryItem).where(where);
-    const items = rows.map(shape);
+    const items = await withEffectiveUnits(rows.map(shape));
     return [null, { items, total, linked: await resolveLinks(items, fields), media: await resolveMedia(items, fields) }];
   } catch {
     return [{ code: 500, msg: 'Failed to retrieve items' }, null];
@@ -144,7 +158,8 @@ export const getItem = async id => {
   try {
     const [row] = await db.select().from(kempoInventoryItem).where(eq(kempoInventoryItem.id, id));
     if(!row) return [{ code: 404, msg: 'Item not found' }, null];
-    return [null, shape(row)];
+    const [item] = await withEffectiveUnits([shape(row)]);
+    return [null, item];
   } catch {
     return [{ code: 500, msg: 'Failed to retrieve item' }, null];
   }
@@ -155,7 +170,8 @@ export const getItemBySku = async sku => {
   try {
     const [row] = await db.select().from(kempoInventoryItem).where(eq(kempoInventoryItem.sku, sku));
     if(!row) return [{ code: 404, msg: 'Item not found' }, null];
-    return [null, shape(row)];
+    const [item] = await withEffectiveUnits([shape(row)]);
+    return [null, item];
   } catch {
     return [{ code: 500, msg: 'Failed to retrieve item' }, null];
   }
@@ -191,13 +207,13 @@ export const getMedia = async items => {
   `owner` (an extension name, from the server SDK only) marks the item as that extension's: see
   ownership.js for what that protects. It cannot be changed afterwards and is not part of the draft.
 */
-export const createItem = async ({ sku, name, description = '', category = '', tags = [], quantity, fields: values = {}, userId = '' } = {}, { owner = '' } = {}) => {
+export const createItem = async ({ sku, name, description = '', category = '', unit = '', tags = [], quantity, fields: values = {}, userId = '' } = {}, { owner = '' } = {}) => {
   /*
     The draft is what a before_create hook sees and may edit: it can fill in or change any
     property, or throw { code, msg } to refuse. Everything is validated after the hooks have run,
     so a hook cannot smuggle in a value that would not otherwise be accepted.
   */
-  const draft = { sku, name, description, category, tags, quantity, fields: { ...values } };
+  const draft = { sku, name, description, category, unit, tags, quantity, fields: { ...values } };
   const refused = await guard(EVENTS.itemBeforeCreate, { draft, userId, actor: owner });
   if(refused) return [refused, null];
 
@@ -209,8 +225,11 @@ export const createItem = async ({ sku, name, description = '', category = '', t
   if(cleanCategory.length > MAX_CATEGORY) return [{ code: 400, msg: `Category must be ${MAX_CATEGORY} characters or fewer` }, null];
   const [tagsError, cleanTags] = normalizeTags(draft.tags);
   if(tagsError) return [tagsError, null];
-  const qty = toInt(draft.quantity, 0);
-  if(Number.isNaN(qty) || qty < 0) return [{ code: 400, msg: 'Quantity must be a non-negative whole number' }, null];
+  const [unitError, cleanUnit] = checkUnit(draft.unit);
+  if(unitError) return [unitError, null];
+  const decimals = await decimalsAllowed();
+  const qty = isEmpty(draft.quantity) ? 0 : toQuantity(draft.quantity, decimals);
+  if(Number.isNaN(qty) || qty < 0) return [{ code: 400, msg: decimals ? 'Quantity must be a non-negative number' : 'Quantity must be a non-negative whole number' }, null];
 
   const [fieldsError, fields] = await getFields();
   if(fieldsError) return [fieldsError, null];
@@ -223,7 +242,7 @@ export const createItem = async ({ sku, name, description = '', category = '', t
   try {
     const row = await db.transaction(async tx => {
       const [created] = await tx.insert(kempoInventoryItem).values({
-        id: newId(), sku: cleanSku, name: cleanName, description: String(draft.description ?? '').trim(), category: cleanCategory, tags: cleanTags,
+        id: newId(), sku: cleanSku, name: cleanName, description: String(draft.description ?? '').trim(), category: cleanCategory, unit: cleanUnit, tags: cleanTags,
         quantity: qty, data: withoutNulls(coerced), owner, created: now, updated: now,
       }).returning();
       if(qty > 0){
@@ -234,7 +253,7 @@ export const createItem = async ({ sku, name, description = '', category = '', t
       }
       return created;
     });
-    const item = shape(row);
+    const [item] = await withEffectiveUnits([shape(row)]);
     await notify(EVENTS.itemCreated, { item, userId, actor: owner });
     return [null, item];
   } catch(error) {
@@ -247,7 +266,7 @@ export const createItem = async ({ sku, name, description = '', category = '', t
   Updates sku, name, description and custom field values. Quantity is not editable here: it only
   changes through adjustQuantity, which keeps the movement history honest.
 */
-export const updateItem = async (id, { sku, name, description, category, tags, fields: values, userId = '' } = {}, { owner = '' } = {}) => {
+export const updateItem = async (id, { sku, name, description, category, unit, tags, fields: values, userId = '' } = {}, { owner = '' } = {}) => {
   const [lookupError, existing] = await getItem(id);
   if(lookupError) return [lookupError, null];
 
@@ -256,6 +275,7 @@ export const updateItem = async (id, { sku, name, description, category, tags, f
   if(name !== undefined) changes.name = name;
   if(description !== undefined) changes.description = description;
   if(category !== undefined) changes.category = category;
+  if(unit !== undefined) changes.unit = unit;
   if(tags !== undefined) changes.tags = tags;
   if(values !== undefined) changes.fields = { ...values };
 
@@ -276,6 +296,11 @@ export const updateItem = async (id, { sku, name, description, category, tags, f
     if(!updates.name) return [{ code: 400, msg: 'Name cannot be empty' }, null];
   }
   if(changes.description !== undefined) updates.description = String(changes.description).trim();
+  if(changes.unit !== undefined){
+    const [unitError, cleanUnit] = checkUnit(changes.unit);
+    if(unitError) return [unitError, null];
+    updates.unit = cleanUnit;
+  }
   if(changes.category !== undefined){
     updates.category = tidyCategory(changes.category);
     if(updates.category.length > MAX_CATEGORY) return [{ code: 400, msg: `Category must be ${MAX_CATEGORY} characters or fewer` }, null];
@@ -304,7 +329,7 @@ export const updateItem = async (id, { sku, name, description, category, tags, f
   try {
     const [row] = await db.update(kempoInventoryItem).set(updates).where(eq(kempoInventoryItem.id, id)).returning();
     if(!row) return [{ code: 404, msg: 'Item not found' }, null];
-    const item = shape(row);
+    const [item] = await withEffectiveUnits([shape(row)]);
     await notify(EVENTS.itemUpdated, { item, previous: existing, userId, actor: owner });
     return [null, item];
   } catch(error) {
@@ -340,35 +365,49 @@ export const deleteItem = async (id, { userId = '', owner = '' } = {}) => {
   so concurrent adjustments cannot oversell.
 */
 /* Anyone may adjust quantity, owned item or not; `owner` only tells hooks which extension did it. */
-export const adjustQuantity = async (id, { delta, reason = 'adjustment', note = '', userId = '', owner = '' } = {}) => {
+export const adjustQuantity = async (id, { delta, set, reason = 'adjustment', note = '', userId = '', owner = '' } = {}) => {
   const [lookupError, existing] = await getItem(id);
   if(lookupError) return [lookupError, null];
 
-  const draft = { delta, reason, note };
+  /* `set` is the count to end at; the change is worked out from the count held when it is written. */
+  const decimals = await decimalsAllowed();
+  const setting = set !== undefined && set !== null && set !== '';
+  const target = setting ? toQuantity(set, decimals) : NaN;
+  if(setting && (Number.isNaN(target) || target < 0)) return [{ code: 400, msg: decimals ? 'The quantity must be a non-negative number' : 'The quantity must be a non-negative whole number' }, null];
+  if(setting && target === existing.quantity) return [null, existing];
+
+  const draft = { delta: setting ? toQuantity(target - existing.quantity, true) : delta, reason, note };
   const refused = await guard(EVENTS.quantityBeforeAdjust, { item: existing, draft, userId, actor: owner });
   if(refused) return [refused, null];
 
-  const change = toInt(draft.delta, NaN);
-  if(Number.isNaN(change) || change === 0) return [{ code: 400, msg: 'delta must be a non-zero whole number' }, null];
+  const requested = toQuantity(draft.delta, decimals);
+  if(!setting && (Number.isNaN(requested) || requested === 0)) return [{ code: 400, msg: decimals ? 'delta must be a non-zero number' : 'delta must be a non-zero whole number' }, null];
 
   try {
     const result = await db.transaction(async tx => {
+      const [locked] = await tx.select({ quantity: kempoInventoryItem.quantity }).from(kempoInventoryItem)
+        .where(eq(kempoInventoryItem.id, id)).for('update');
+      if(!locked) return { missing: true };
+      const change = setting ? toQuantity(target - locked.quantity, true) : requested;
+      if(change === 0) return { unchanged: true };
       const [row] = await tx.update(kempoInventoryItem)
         .set({ quantity: sql`${kempoInventoryItem.quantity} + ${change}`, updated: new Date() })
         .where(and(eq(kempoInventoryItem.id, id), sql`${kempoInventoryItem.quantity} + ${change} >= 0`))
         .returning();
-      if(!row) return null;
+      if(!row) return { insufficient: true };
       const [movement] = await tx.insert(kempoInventoryMovement).values({
         id: newId(), itemId: id, delta: change, quantityAfter: row.quantity,
-        reason: String(draft.reason || 'adjustment'), note: String(draft.note || ''), userId, created: new Date(),
+        reason: String(draft.reason ?? 'adjustment'), note: String(draft.note || ''), userId, created: new Date(),
       }).returning();
-      return { row, movement };
+      return { row, movement, change };
     });
-    if(!result) return [{ code: 409, msg: 'Insufficient quantity' }, null];
+    if(result.missing) return [{ code: 404, msg: 'Item not found' }, null];
+    if(result.unchanged) return [null, existing];
+    if(result.insufficient) return [{ code: 409, msg: 'Insufficient quantity' }, null];
 
-    const item = shape(result.row);
+    const [item] = await withEffectiveUnits([shape(result.row)]);
     await notify(EVENTS.quantityAdjusted, {
-      item, previousQuantity: item.quantity - change, delta: change,
+      item, previousQuantity: toQuantity(item.quantity - result.change, true), delta: result.change,
       reason: result.movement.reason, note: result.movement.note, movement: result.movement, userId, actor: owner,
     });
     return [null, item];
@@ -406,14 +445,15 @@ class Refusal {
 export const adjustQuantityMany = async (changes, { reason = 'adjustment', note = '', ref = '', userId = '', owner = '' } = {}) => {
   if(!Array.isArray(changes) || !changes.length) return [{ code: 400, msg: 'changes must be a non-empty list' }, null];
 
+  const decimals = await decimalsAllowed();
   const totals = new Map();
   for(const change of changes){
     const id = String(change?.id ?? '');
-    const delta = toInt(change?.delta, NaN);
+    const delta = toQuantity(change?.delta, decimals);
     if(!id) return [{ code: 400, msg: 'Every change needs an item id' }, null];
-    if(Number.isNaN(delta)) return [{ code: 400, msg: 'Every delta must be a whole number' }, null];
+    if(Number.isNaN(delta)) return [{ code: 400, msg: decimals ? 'Every delta must be a number' : 'Every delta must be a whole number' }, null];
     const entry = totals.get(id) ?? { id, delta: 0, reason: change.reason, note: change.note };
-    entry.delta += delta;
+    entry.delta = toQuantity(entry.delta + delta, true);
     totals.set(id, entry);
   }
   /* In a fixed order, so two overlapping calls lock rows the same way round and cannot deadlock. */
@@ -435,8 +475,8 @@ export const adjustQuantityMany = async (changes, { reason = 'adjustment', note 
     const draft = { delta: entry.delta, reason: entry.reason ?? reason, note: entry.note ?? note };
     const refused = await guard(EVENTS.quantityBeforeAdjust, { item: existing.get(entry.id), draft, userId, actor: owner });
     if(refused) return [refused, null];
-    const delta = toInt(draft.delta, NaN);
-    if(Number.isNaN(delta) || delta === 0) return [{ code: 400, msg: 'delta must be a non-zero whole number' }, null];
+    const delta = toQuantity(draft.delta, decimals);
+    if(Number.isNaN(delta) || delta === 0) return [{ code: 400, msg: decimals ? 'delta must be a non-zero number' : 'delta must be a non-zero whole number' }, null];
     drafts.set(entry.id, { delta, reason: String(draft.reason || 'adjustment'), note: String(draft.note || '') });
   }
 
@@ -463,7 +503,7 @@ export const adjustQuantityMany = async (changes, { reason = 'adjustment', note 
       const item = shape(row);
       items.push(item);
       await notify(EVENTS.quantityAdjusted, {
-        item, previousQuantity: item.quantity - delta, delta, reason: movement.reason, note: movement.note, movement, userId, actor: owner,
+        item, previousQuantity: toQuantity(item.quantity - delta, true), delta, reason: movement.reason, note: movement.note, movement, userId, actor: owner,
       });
     }
     return [null, { items }];

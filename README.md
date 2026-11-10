@@ -2,7 +2,8 @@
 
 The core of an inventory system for [kempo](https://www.npmjs.com/package/kempo) CMS. It is deliberately small: every item has just a **SKU**, **name**, **quantity** and **description**. Everything else is a *custom field* that a person adds in the admin, or that another extension registers, so the same base can model anything: parts, books, rentals, supplies.
 
-- Quantity changes go through one audited action, with a reason, a note and a movement history
+- Quantity changes go through one audited action: add or remove, or set the count outright. A reason and a note are optional, and every change is kept in a movement history
+- Units (oz, g, and so on) on items, with a category's unit as the default. Quantities can have decimal places when the `decimal_quantity` setting is on
 - Custom fields of seven types, managed in **Admin > Inventory > Fields**
 - A server SDK and a set of hooks so other extensions can extend it (reorder levels, pricing, suppliers, categories...), and fields, categories and items can be owned by an extension
 - Admin page at **Admin > Inventory**, JSON API under `/inventory/api`

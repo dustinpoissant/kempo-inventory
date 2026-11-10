@@ -4,7 +4,10 @@
   "public-scope": "inventory",
   "schema": "./server/db/schema.js",
   "suggestedPeers": [
-    { "name": "kempo-media", "reason": "Photos and other files on inventory items (brings kempo-files and kempo-thumbs with it)" }
+    {
+      "name": "kempo-media",
+      "reason": "Photos and other files on inventory items (brings kempo-files and kempo-thumbs with it)"
+    }
   ],
   "widgets": [
     {
@@ -91,6 +94,12 @@
       "description": "The largest import file (a .json or .zip made by Export) the admin Import accepts, in MB."
     },
     {
+      "name": "decimal_quantity",
+      "value": false,
+      "type": "boolean",
+      "description": "Allow quantities with decimal places, such as 2.5 oz of paint or 12.75 g of filament, up to four places. Off, quantities are whole numbers. Turning it on does not change quantities already stored."
+    },
+    {
       "name": "public_read",
       "value": false,
       "type": "boolean",
@@ -114,5 +123,8 @@
       "type": "string",
       "description": "The aspect ratio item photos are shown at, as width:height (4:3, 1:1, 16:9). Images are cropped to fit, never stretched."
     }
-  ]
+  ],
+  "public-scopes": {
+    "items": "public-items"
+  }
 }
