@@ -103,7 +103,7 @@
       "name": "public_read",
       "value": false,
       "type": "boolean",
-      "description": "Let anyone, signed in or not, browse the inventory (items, categories, photos). They never see quantity counts. Off by default: reading otherwise needs the items:read permission."
+      "description": "Let anyone, signed in or not, browse the inventory (items, categories, photos). The item page shows them the quantity and its history, but they cannot change it. Off by default: reading otherwise needs the items:read permission."
     },
     {
       "name": "public_photos",

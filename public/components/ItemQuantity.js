@@ -108,38 +108,30 @@ export default class ItemQuantity extends ShadowComponent {
     const setting = this.mode === 'set';
     return html`
       <h4>${setting ? 'Set the count' : 'Add or remove'}</h4>
-      <div class="d-f" style="align-items: flex-end;">
+      <div class="d-f">
         <div class="mb mrq">
-          <label class="d-b mbq" for="qtyMode">How
-            <small class="d-b tc-muted">Set the count, or add and remove.</small>
-          </label>
+          <label class="d-b mbq" for="qtyMode">How</label>
           <select id="qtyMode" class="m0" @change=${event => { this.mode = event.target.value; this.amount = ''; }}>
             <option value="change" ?selected=${!setting}>Add or remove</option>
             <option value="set" ?selected=${setting}>Set to</option>
           </select>
         </div>
-        <div class="mb mrq" style="width: 16rem;">
-          <label class="d-b mbq" for="qtyAmount">${setting ? 'Count' : 'Change'}${this.unit ? ` (${this.unit})` : ''}
-            <small class="d-b tc-muted">${setting
-              ? 'The count it should be now. The change is worked out for you.'
-              : 'Add a number to receive stock, or use a minus sign to remove it.'}</small>
-          </label>
+        <div class="mb mrq" style="width: 12rem;">
+          <label class="d-b mbq" for="qtyAmount">${setting ? 'Count' : 'Change'}${this.unit ? ` (${this.unit})` : ''} <span class="tc-danger">*</span></label>
           <input id="qtyAmount" type="number" step="any" class="full m0" .value=${this.amount}
             @input=${event => { this.amount = event.target.value; }}>
         </div>
+      </div>
+      <div class="d-f">
         <div class="mb mrq">
-          <label class="d-b mbq" for="qtyReason">Reason
-            <small class="d-b tc-muted">Optional. Why it changed, if you want it recorded.</small>
-          </label>
+          <label class="d-b mbq" for="qtyReason">Reason</label>
           <select id="qtyReason" class="m0" @change=${event => { this.reason = event.target.value; }}>
             <option value="" ?selected=${this.reason === ''}>No reason</option>
             ${Object.entries(REASONS).map(([value, label]) => html`<option value=${value} ?selected=${value === this.reason}>${label}</option>`)}
           </select>
         </div>
         <div class="flex mb mrq" style="min-width: 12rem;">
-          <label class="d-b mbq" for="qtyNote">Note
-            <small class="d-b tc-muted">Optional. Shown in the history.</small>
-          </label>
+          <label class="d-b mbq" for="qtyNote">Note</label>
           <input id="qtyNote" type="text" class="full m0" maxlength="200" .value=${this.note}
             @input=${event => { this.note = event.target.value; }}>
         </div>

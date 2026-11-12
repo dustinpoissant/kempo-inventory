@@ -128,7 +128,7 @@ Items and categories can be **tagged**: short labels such as `acrylic`, `red`, `
 
 Reading the inventory needs the `items:read` permission. Turn on the `public_read` setting (off by default) and **anyone can read it, signed in or not**, so it can be shared as a catalogue. Public reading covers items, categories and fields (and photos, see below); writing always needs the matching permission.
 
-**Quantity counts are only for people who manage quantity.** A caller without `quantity:adjust` or `items:update`, whether signed out, signed in with only `items:read`, or reading publicly, gets items **without `quantity`** and no stock history (`GET /inventory/api/movements` is refused). Callers who do manage quantity get everything as before.
+**The item page shows the count to everyone who can read it.** `GET /inventory/api/items/[id]` returns the `quantity` and the stock history to any reader, signed in or not, so the item page's Quantity tab looks the same for everyone (only people with `quantity:adjust` get the form to change it). Who made a change (`userId`) is only sent to callers with `quantity:adjust` or `items:update`. Lists and searches (`GET /inventory/api/items`) and `GET /inventory/api/movements` still leave the count out for those without `quantity:adjust` or `items:update`.
 
 ## Who can see photos
 

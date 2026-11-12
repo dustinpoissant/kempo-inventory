@@ -1,4 +1,4 @@
-import { authorizeRead, forCaller } from '../../../../server/utils/access.js';
+import { authorizeRead } from '../../../../server/utils/access.js';
 import { getItem, getMovements, getLinked, getMedia } from '../../../../server/utils/items.js';
 
 export default async (request, response) => {
@@ -7,9 +7,10 @@ export default async (request, response) => {
 
   const [error, item] = await getItem(request.params.id);
   if(error) return response.status(error.code).json({ error: error.msg });
-  /* The quantity history is all counts, so it is only for people who manage quantity. */
-  const [, movements] = access.canSeeQuantity ? await getMovements({ itemId: item.id, limit: 100 }) : [null, []];
+  /* The item page shows the count and history to everyone who can read it; who made a change is only for people who manage quantity. */
+  const [, found] = await getMovements({ itemId: item.id, limit: 100 });
+  const movements = (found || []).map(({ userId, ...movement }) => access.canSeeQuantity ? { ...movement, userId } : movement);
   const [, linked] = await getLinked(item);
   const [, media] = await getMedia(item);
-  response.json({ item: forCaller(item, access), movements: movements || [], linked: linked || {}, media: media || {} });
+  response.json({ item, movements, linked: linked || {}, media: media || {} });
 };

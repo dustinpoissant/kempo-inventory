@@ -1,5 +1,6 @@
 import { LitElement, html } from '/kempo-ui/lit-all.min.js';
 import Toast from '/kempo-ui/components/Toast.js';
+import PhotoViewer from '/kempo-ui/components/PhotoViewer.js';
 import '/kempo-ui/components/Toggle.js';
 import '/kempo-ui/components/Combobox.js';
 import '/kempo-ui/components/Icon.js';
@@ -112,6 +113,7 @@ export class InventoryMediaField extends LitElement {
     assets: { type: Object },
     uploading: { type: Number, state: true },
     max: { type: Number },
+    readOnly: { type: Boolean, attribute: 'readonly' },   // show the files only: no adding, removing or reordering, and a click opens the photo viewer
     ratioFor: { type: String, attribute: 'ratio-for' }, // 'item' (default) or 'category': whose aspect ratio the previews use
     ratio: { type: String, state: true },
     cropRatio: { type: String, attribute: 'crop-ratio' },   // force photos to this shape as they are added, e.g. '1 / 1'
@@ -175,28 +177,38 @@ export class InventoryMediaField extends LitElement {
     this.ratio = ratios[this.ratioFor || 'item'] ?? '4 / 3';
   }
 
+  /* Read only: the photo viewer opens over the page, with arrows and keys to move between this field's photos. */
+  openPhoto = id => {
+    const images = this.value.map(v => this.assets[v]).filter(asset => asset?.kind === 'image');
+    PhotoViewer.open(images.map(asset => ({ src: asset.path, caption: asset.alt || asset.name })), images.indexOf(this.assets[id]));
+  };
+
   render(){
     return html`
       <div class="d-f" style="flex-wrap: wrap; gap: var(--spacer_h); align-items: center;">
         ${this.value.map((id, index) => {
           const asset = this.assets[id];
-          const ordered = this.max > 1 && this.value.length > 1;
+          const ordered = !this.readOnly && this.max > 1 && this.value.length > 1;
           return html`
             <div class="media-tile" style="position: relative; width: 5rem; aspect-ratio: ${this.ratio ?? '4 / 3'}; border: 1px solid var(--c_border); border-radius: var(--radius); overflow: hidden; display: flex; align-items: center; justify-content: center;" title=${asset?.name ?? 'Missing file'}>
               ${asset?.thumbnail || asset?.kind === 'image'
                 ? html`<img src=${asset.thumbnail ?? asset.path} alt=${asset.alt || asset.name} style="width: 100%; height: 100%; object-fit: cover;">`
                 : html`<small style="padding: 2px; text-align: center; word-break: break-all;">${asset?.name ?? 'Missing'}</small>`}
-              <button type="button" class="no-btn" style="position: absolute; top: 0; right: 0; background: var(--c_bg); line-height: 1; padding: 2px;" aria-label="Remove" @click=${() => this.remove(id)}><k-icon name="close"></k-icon></button>
+              ${this.readOnly
+                ? (asset?.kind === 'image'
+                  ? html`<a href=${asset.path} style="position: absolute; inset: 0;" aria-label=${`View ${asset.alt || asset.name}`} @click=${e => { e.preventDefault(); this.openPhoto(id); }}></a>`
+                  : asset ? html`<a href=${asset.path} target="_blank" rel="noopener" style="position: absolute; inset: 0;" aria-label=${`Open ${asset.name}`}></a>` : '')
+                : html`<button type="button" class="no-btn" style="position: absolute; top: 0; right: 0; background: var(--c_bg); line-height: 1; padding: 2px;" aria-label="Remove" @click=${() => this.remove(id)}><k-icon name="close"></k-icon></button>`}
               ${ordered ? (index === 0
                 ? html`<span class="media-primary" style="position: absolute; left: 0; bottom: 0; right: 0; background: var(--c_bg); font-size: 0.7rem; text-align: center; line-height: 1.4;"><k-icon name="star_filled"></k-icon> Primary</span>`
                 : html`<button type="button" class="no-btn media-make-primary" style="position: absolute; left: 0; bottom: 0; right: 0; background: var(--c_bg); font-size: 0.7rem; line-height: 1.4; cursor: pointer;" aria-label="Make this the primary photo" title="Make this the primary photo" @click=${() => this.makePrimary(id)}><k-icon name="star"></k-icon> Make primary</button>`) : ''}
             </div>`;
         })}
-        <label class="btn" style="margin: 0; cursor: pointer;">
+        ${this.readOnly ? '' : html`<label class="btn" style="margin: 0; cursor: pointer;">
           <k-icon name="add"></k-icon> ${this.uploading ? `Uploading ${this.uploading}…` : 'Add files'}
           <input type="file" multiple accept=${MEDIA_ACCEPT} style="display: none;"
             @change=${e => { const files = [...e.target.files]; e.target.value = ''; this.addFiles(files); }}>
-        </label>
+        </label>`}
       </div>`;
   }
 }
@@ -281,6 +293,7 @@ export const readTags = $tags => {
 class InventoryColorField extends LitElement {
   static properties = {
     value: { type: String },
+    readOnly: { type: Boolean, attribute: 'readonly' },
   };
 
   constructor(){
@@ -296,6 +309,12 @@ class InventoryColorField extends LitElement {
   }
 
   render(){
+    if(this.readOnly) return this.value
+      ? html`<div class="d-f" style="align-items: center; gap: var(--spacer_h);">
+          <span style="display: inline-block; width: 4rem; height: 4rem; border: 1px solid var(--c_border); border-radius: var(--radius); background: ${this.value};"></span>
+          <span class="tc-muted">${this.value}</span>
+        </div>`
+      : '';
     return this.value
       ? html`<div class="d-f" style="align-items: center; gap: var(--spacer_h);">
           <k-color-picker format="hex" .value=${this.value} @change=${e => {
@@ -345,58 +364,73 @@ const preloadSuggestions = ($combobox, field) => {
 /*
   The form control for one field, with its label, a required marker and its description.
 */
-export const fieldTemplate = (field, value, { linked = {}, media = {}, ownId = null } = {}) => {
+export const fieldTemplate = (field, value, { linked = {}, media = {}, ownId = null, readOnly = false } = {}) => {
   const id = inputId(field);
   const link = field.type === 'item' && value ? linked[value] : null;
   const linkLabel = link ? `${link.name} (${link.sku})` : '';
+  /* Read only, a box that only offers choices (a list, a search) is a plain read-only input holding its text, so every box looks alike. */
+  const plain = text => html`<input type="text" id=${id} class="full" readonly .value=${text}>`;
   let control;
   switch(field.type){
     case 'longtext':
-      control = html`<textarea id=${id} class="full" rows="3" .value=${value ?? ''}></textarea>`;
+      control = html`<textarea id=${id} class="full" rows="3" ?readonly=${readOnly} .value=${value ?? ''}></textarea>`;
       break;
     case 'url':
-      control = html`<input type="url" id=${id} class="full" placeholder="https://" .value=${value ?? ''}>`;
+      control = html`<input type="url" id=${id} class="full" placeholder=${readOnly ? '' : 'https://'} ?readonly=${readOnly} .value=${value ?? ''}>`;
       break;
     case 'number':
-      control = html`<input type="number" step="any" id=${id} class="full" .value=${value ?? ''}>`;
+      control = html`<input type="number" step="any" id=${id} class="full" ?readonly=${readOnly} .value=${value ?? ''}>`;
       break;
     case 'date':
-      control = html`<input type="date" id=${id} class="full" .value=${value ?? ''}>`;
+      control = html`<input type="date" id=${id} class="full" ?readonly=${readOnly} .value=${value ?? ''}>`;
       break;
     case 'color':
-      control = html`<k-inventory-color-field id=${id} .value=${value ?? ''}></k-inventory-color-field>`;
+      control = html`<k-inventory-color-field id=${id} ?readonly=${readOnly} .value=${value ?? ''}></k-inventory-color-field>`;
       break;
     case 'rating':
       control = html`<div class="d-f" style="align-items: center; gap: var(--spacer_h);">
-        <k-rating id=${id} .value=${Number(value) || 0}></k-rating>
-        <button type="button" class="no-btn tc-muted" style="cursor: pointer;" aria-label="Clear the rating" @click=${e => { e.currentTarget.previousElementSibling.value = 0; }}>clear</button>
+        <k-rating id=${id} ?disabled=${readOnly} .value=${Number(value) || 0}></k-rating>
+        ${readOnly ? '' : html`<button type="button" class="no-btn tc-muted" style="cursor: pointer;" aria-label="Clear the rating" @click=${e => { e.currentTarget.previousElementSibling.value = 0; }}>clear</button>`}
       </div>`;
       break;
     case 'boolean':
-      control = html`<k-toggle id=${id} .value=${Boolean(value)}></k-toggle>`;
+      control = html`<k-toggle id=${id} ?disabled=${readOnly} .value=${Boolean(value)}></k-toggle>`;
       break;
     case 'select':
-      control = html`<select id=${id} class="full">
+      control = readOnly ? plain(value ?? '') : html`<select id=${id} class="full">
         <option value="">${field.required ? 'Choose…' : 'None'}</option>
         ${field.options.map(o => html`<option value=${o} ?selected=${o === value}>${o}</option>`)}
       </select>`;
       break;
     case 'item':
-      control = html`<k-combobox id=${id} class="full" placeholder="Search items…"
+      control = readOnly ? plain(linkLabel || (value ? '(deleted item)' : '')) : html`<k-combobox id=${id} class="full" placeholder="Search items…"
         .value=${linkLabel} data-item-id=${value ?? ''} data-label=${linkLabel}
         @search=${e => searchItems(e, ownId)}
         @select=${e => { e.currentTarget.dataset.itemId = e.detail.value; e.currentTarget.dataset.label = e.detail.label; }}></k-combobox>`;
       break;
     case 'media':
-      control = html`<k-inventory-media-field id=${id} .value=${value ?? []} .assets=${media} .cropRatio=${field.imageRatio ?? ''} .cropMax=${field.imageMax ?? 0}></k-inventory-media-field>`;
+      control = html`<k-inventory-media-field id=${id} ?readonly=${readOnly} .value=${value ?? []} .assets=${media} .cropRatio=${field.imageRatio ?? ''} .cropMax=${field.imageMax ?? 0}></k-inventory-media-field>`;
       break;
     default:
-      control = field.type === 'text' && field.suggest
+      control = field.type === 'text' && field.suggest && !readOnly
         ? html`<k-combobox id=${id} class="full" debounce-ms="150" .value=${value ?? ''}
             empty-message="Nothing saved yet. Type to add one." no-results-message="New value"
             @focusin=${e => preloadSuggestions(e.currentTarget, field)}
             @search=${e => loadSuggestions(e.currentTarget, field, e.detail.value)}></k-combobox>`
-        : html`<input type="text" id=${id} class="full" .value=${value ?? ''}>`;
+        : html`<input type="text" id=${id} class="full" ?readonly=${readOnly} .value=${value ?? ''}>`;
+  }
+  if(readOnly && field.type === 'url' && /^https?:\/\//i.test(String(value ?? '').trim())){
+    /* Only web addresses get a link; anything else (a javascript: or data: address, say) stays plain text. */
+    control = html`<div class="d-f" style="gap: var(--spacer_h);">
+      <div class="flex">${control}</div>
+      <a class="btn" href=${String(value).trim()} target="_blank" rel="noopener" aria-label="Open in a new tab" title="Open in a new tab"><k-icon name="open_in_browser"></k-icon></a>
+    </div>`;
+  }
+  if(readOnly && link){
+    control = html`<div class="d-f" style="gap: var(--spacer_h);">
+      <div class="flex">${control}</div>
+      <a class="btn" href="/items/${value}" aria-label="Open this item" title="Open this item"><k-icon name="arrow" direction="right"></k-icon></a>
+    </div>`;
   }
   return html`<div class="mb">
     <label class="d-b mb-sm" for=${id}>${field.label}${field.required ? ' *' : ''}</label>

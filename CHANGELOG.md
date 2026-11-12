@@ -2,25 +2,26 @@
 
 All notable changes to `kempo-inventory` are documented in this file.
 
-## [Unreleased]
+## [0.6.0] - 2026-11-12
+
+Requires kempo-ui 1.5.0 or later (the read-only fields).
 
 ### Added
 
+- **One item page.** `/items/<id>` is the page to read and, for people who may update items, to edit: Details (the form, with Save and Reset at the top right, both off until something changes; a save stays on the page and shows a toast at the bottom right), Quantity, and the tabs extensions add (Barcodes). The separate edit page is gone from this extension.
 - **URL field type (`url`).** Stored like short text, shown as a link on the item page. Without a scheme `https://` is added; only http and https are accepted, so a link cannot run a script. A text field can be converted to a URL field: every value it holds must be a web address, and is kept as its full address. A javascript: address is stripped of its scheme when a field is converted, and only http and https addresses become links (anything else shows as plain text). Other values stay as they are; every URL field value is shown as a link that opens in a new tab.
 - **Units.** Items and categories have a unit (oz, g, or anything up to 20 characters). An item's own unit overrides its category's. The unit is shown beside quantities on the item's Quantity tab and in the admin list, and it is kept by export and import. Nothing is built in: a unit is only what someone types.
 - **Decimal quantities.** The `decimal_quantity` setting (off by default) allows quantities with up to four decimal places, such as 2.5 oz. Off, quantities stay whole numbers. Turning it on does not change quantities already stored. Quantities are now stored with decimal places, so this update changes the quantity columns' type on existing databases.
 - **Set to a count.** The Quantity tab and the admin Adjust dialog can set the count outright; the change is worked out from the count held at the moment of the write. Setting the count it already has records nothing.
-- **Item edit page Quantity tab** on the admin edit page and the item's edit page on the site: the count, add or remove, and the history.
+- **Quantity tab** on the admin edit page and the item page: the count, add or remove, and the history.
+- **An `inventory-item-tabs` location** on the admin item page. The page is now tabbed (Details first), and an extension adds its own tab with an admin/*.global.html file.
 
 ### Changed
 
+- **The item page looks the same for everyone.** People who cannot edit see the same form with every box read only (a link beside a URL or linked item opens it; a photo opens the viewer), and no Save, Reset or Delete. `createItemForm` takes `readOnly`, and `fieldTemplate` takes `readOnly` in its context. The Quantity tab shows for everyone, signed in or not: `GET /inventory/api/items/[id]` now sends the count and history to any reader (without `userId` unless they manage quantity). Lists, searches and `GET /inventory/api/movements` are unchanged.
+- **The Quantity tab lays out in two rows** (How and Count, then Reason and Note), without footnotes. Count is marked required with a red asterisk; everything else is optional.
 - **The reason is optional.** A quantity change with no reason is stored with no reason, and the history shows nothing in the Reason column. Changes made through the API without a `reason` still record `adjustment`.
-
 - A field's **Applies to** can be changed when the field is edited (it was fixed at creation). Its values move with it, and the change is refused if the key is already used in the new scope. Only the extension that manages a field can change its scope; the admin cannot.
-
-### Added
-
-- **An `inventory-item-tabs` location** on the admin item page. The page is now tabbed (Details first), and an extension adds its own tab with an admin/*.global.html file.
 
 ## [0.5.1] - 2026-11-09
 

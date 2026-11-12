@@ -1,6 +1,6 @@
 <!--
   title: Item
-  description: A single inventory item
+  description: A single inventory item, to read or, with permission, to edit
 -->
 <page template="default" title="Item">
 <content>
@@ -8,126 +8,162 @@
 		<k-tabs active="details" hash-routing>
 			<k-tab for="details">Details</k-tab>
 			<k-tab-content name="details" class="pt">
-				<div id="detail"></div>
+				<div id="itemHeader"></div>
+				<div id="itemBody"></div>
+			</k-tab-content>
+			<k-tab for="quantity">Quantity</k-tab>
+			<k-tab-content name="quantity" class="pt">
+				<k-inventory-item-quantity id="itemQuantity"></k-inventory-item-quantity>
 			</k-tab-content>
 			<location name="inventory-item-tabs" />
 		</k-tabs>
 	</div>
 </content>
 <content location="scripts">
-	<script type="module" src="/kempo-ui/components/Tabs.js"></script>	<script type="module">
+	<script type="module" src="/kempo-ui/components/Tabs.js"></script>
+	<script type="module">
 		import { html, render } from '/kempo-ui/lit-all.min.js';
 		import Dialog from '/kempo-ui/components/Dialog.js';
 		import Toast from '/kempo-ui/components/Toast.js';
-		import PhotoViewer from '/kempo-ui/components/PhotoViewer.js';
-		import '/kempo-ui/components/Rating.js';
 		import { getSession, getAllCurrentUserPermissions } from '/kempo/sdk.js';
 		import { getItem, deleteItem, getFields } from '/inventory/sdk.js';
-		import { displayValue, applicableFields } from '/inventory/components/ItemFields.js';
+		import { createItemForm } from '/inventory/components/ItemForm.js';
+		import '/inventory/components/ItemQuantity.js';
 
+		/*
+		  One page for an item, the same for everyone: Details, Quantity and whatever extensions add to the
+		  inventory-item-tabs location (Barcodes, say). Details is the item form: editable for people who may
+		  update items, the same form with every box read only for everyone else.
+		*/
 		const id = location.pathname.split('/').filter(Boolean).pop();
 		const $app = document.getElementById('app');
-		const $detail = document.getElementById('detail');
+		const $header = document.getElementById('itemHeader');
+		const $body = document.getElementById('itemBody');
 
 		const [, session] = await getSession();
-		const signedIn = Boolean(session?.user);
-		const [, permissionData] = signedIn ? await getAllCurrentUserPermissions() : [null, null];
+		const [, permissionData] = session?.user ? await getAllCurrentUserPermissions() : [null, null];
 		const permissions = new Set(permissionData?.permissions ?? []);
 		const can = name => permissions.has(`kempo-inventory:${name}`);
+		const canEdit = can('items:update');
+
+		/* Everyone sees the count and its history; only people who may adjust it get the form (the component checks). */
+		document.getElementById('itemQuantity').itemId = id;
+
+		let fields = [];
+		let current = null;
+		let form = null;
+		let dirty = false;
+		let saving = false;
+
 		const [fieldsError, fieldData] = await getFields();
 		if(fieldsError){
 			$app.innerHTML = '<p class="tc-danger">You need to sign in to view this item.</p>';
 			$app.hidden = false;
 			Toast.error(fieldsError.msg || 'Failed to load the inventory fields');
 		} else {
+			fields = fieldData.fields;
 			$app.hidden = false;
-			await draw(fieldData);
+			$body.style.maxWidth = '44rem';
+			await show();
 		}
 
 		/* The category is a built-in property of every item; '' means uncategorised. */
-		/* Only web addresses become links; anything else (a javascript: or data: address, say) shows as plain text. */
-		function isWebLink(value){
-			try {
-				const { protocol } = new URL(String(value).trim());
-				return protocol === 'http:' || protocol === 'https:';
-			} catch {
-				return false;
-			}
-		}
 		function categoryOf(item){ return (item.category ?? '').trim(); }
 		function categoryHref(name){ return name ? `/category?name=${encodeURIComponent(name)}` : '/category?uncategorised=1'; }
 		function tagChips(tags){ return tags?.length ? html`<div class="tag-list">${tags.map(tag => html`<a class="tag-chip" href="/search?tag=${encodeURIComponent(tag)}">${tag}</a>`)}</div>` : ''; }
 
-		async function draw(fieldData){
-			const fields = fieldData.fields;
+		/* Loads the item and draws the page from it: the first time, and again after a save. */
+		async function show(){
 			const [error, data] = await getItem(id);
 			if(error){
 				render(html`<a href="/" class="btn mb"><k-icon name="arrow" direction="left"></k-icon> Home</a>
-					<h1>${error.code === 404 ? 'Item not found' : 'Something went wrong'}</h1><p>${error.msg}</p>`, $detail);
+					<h1>${error.code === 404 ? 'Item not found' : 'Something went wrong'}</h1><p>${error.msg}</p>`, $header);
 				return;
 			}
-			const { item, linked, media } = data;
-			document.title = `${item.name} · Inventory`;
+			current = data;
+			document.title = `${data.item.name} · Inventory`;
+			dirty = false;
+			mountForm();
+			drawHeader();
+		}
+
+		/* The form is a fresh one each time: that is what Reset does, and what a save leaves behind. */
+		function mountForm(){
+			const { item, linked, media } = current;
+			form = createItemForm({ item, fields, readOnly: !canEdit, context: { linked, media, ownId: item.id } });
+			$body.replaceChildren(form.$root);
+		}
+
+		function drawHeader(){
+			if(!current) return;
+			const { item } = current;
 			const category = categoryOf(item);
 			const backHref = category ? categoryHref(category) : '/';
-			const context = { linked, media };
+			render(html`
+				<div class="d-f" style="align-items: center;">
+					<a href=${backHref} class="btn mb mrq" id="backBtn"><k-icon name="arrow" direction="left"></k-icon> ${category || 'Home'}</a>
+					<div class="flex"></div>
+					${canEdit ? html`
+						<button type="button" class="btn mb mrq" id="resetBtn" ?disabled=${!dirty || saving} @click=${reset}>Reset</button>
+						<button type="button" class="btn success mb mrq" id="saveBtn" ?disabled=${!dirty || saving} @click=${save}>${saving ? 'Saving…' : 'Save'}</button>` : ''}
+					${can('items:delete') ? html`<button type="button" class="btn danger mb" id="deleteBtn" @click=${remove}><k-icon name="delete"></k-icon> Delete</button>` : ''}
+				</div>
+				<h1 class="mb" id="itemName">${item.name}</h1>
+			`, $header);
+		}
 
-			/* Clicking a photo opens Kempo UI's photo viewer over the page (arrows and keys move between the item's photos). */
-			const openPhoto = photo => {
-				const images = photos.filter(p => p.kind === 'image');
-				PhotoViewer.open(images.map(p => ({ src: p.path, caption: p.alt || p.name })), images.indexOf(photo));
-			};
-			const shown = applicableFields(fields, item.category);
-			const photos = shown.filter(f => f.type === 'media').flatMap(f => (item.fields[f.key] ?? []).map(mediaId => media[mediaId]).filter(Boolean));
-			const rows = shown.filter(f => f.type !== 'media' && item.fields[f.key] !== undefined && item.fields[f.key] !== null);
+		function reset(){
+			mountForm();
+			dirty = false;
+			drawHeader();
+		}
 
-			const remove = () => Dialog.confirm(`Delete "${item.name}" and its stock history? This action cannot be undone.`, async confirmed => {
+		async function save(){
+			if(saving || !form) return;
+			saving = true;
+			drawHeader();
+			const saved = await form.save();
+			saving = false;
+			if(!saved){
+				drawHeader();
+				return;
+			}
+			Toast.success(`Saved ${saved.name}`, { position: 'bottom right' });
+			await show();
+		}
+
+		function remove(){
+			const { item } = current;
+			const category = categoryOf(item);
+			Dialog.confirm(`Delete "${item.name}" and its stock history? This action cannot be undone.`, async confirmed => {
 				if(!confirmed) return;
 				const [deleteError] = await deleteItem(item.id);
 				if(deleteError){
 					Toast.error(deleteError.msg || 'Failed to delete item');
 					return;
 				}
-				location.href = backHref;
+				location.href = category ? categoryHref(category) : '/';
 			});
+		}
 
-			render(html`
-				<div class="d-f mb" style="align-items: center; gap: var(--spacer); flex-wrap: wrap;">
-					<a href=${backHref} class="btn" id="backBtn"><k-icon name="arrow" direction="left"></k-icon> ${category || 'Home'}</a>
-					<div class="flex"></div>
-					${can('items:update') ? html`<a class="btn" id="editBtn" href=${`/items/${item.id}/edit?next=${encodeURIComponent(`/items/${item.id}`)}`}><k-icon name="edit"></k-icon> Edit</a>` : ''}
-					${can('items:delete') ? html`<button class="btn danger" id="deleteBtn" @click=${remove}><k-icon name="delete"></k-icon> Delete</button>` : ''}
-				</div>
-
-				<h1 class="mb0" id="itemName">${item.name}</h1>
-				<p class="tc-muted mb-sm">${item.sku}</p>
-				${tagChips(item.tags)}
-
-				${photos.length ? html`
-					<div class="gallery mb-lg" id="gallery">
-						${photos.map(p => p.kind === 'image'
-							? html`<a href=${p.path} @click=${e => { e.preventDefault(); openPhoto(p); }}><img src=${p.thumbnail ?? p.path} alt=${p.alt || p.name}></a>`
-							: html`<a href=${p.path} target="_blank" rel="noopener" class="btn">${p.name}</a>`)}
-					</div>` : ''}
-
-				${item.description ? html`<p style="white-space: pre-wrap;">${item.description}</p>` : ''}
-
-				${rows.length ? html`
-					<dl id="fields" style="display: grid; grid-template-columns: max-content 1fr; gap: var(--spacer_q) var(--spacer);">
-						${rows.map(f => html`<dt class="tc-muted">${f.label}</dt>
-							<dd class="m0">${f.type === 'rating'
-								? html`<k-rating disabled .value=${item.fields[f.key]} aria-label=${`${item.fields[f.key]} out of 5`}></k-rating>`
-								: f.type === 'color'
-								? html`<span style="display: inline-block; width: 4rem; height: 4rem; vertical-align: middle; margin-right: var(--spacer_h); border: 1px solid var(--c_border); border-radius: var(--radius); background: ${item.fields[f.key]};"></span>${item.fields[f.key]}`
-								: f.type === 'item' && linked[item.fields[f.key]]
-								? html`<a href="/items/${item.fields[f.key]}">${displayValue(f, item.fields[f.key], context)}</a>`
-								: f.type === 'url' && isWebLink(item.fields[f.key])
-									? html`<a href=${item.fields[f.key]} target="_blank" rel="noopener">${item.fields[f.key]}</a>`
-									: f.type === 'longtext'
-									? html`<span style="white-space: pre-wrap;">${item.fields[f.key]}</span>`
-									: displayValue(f, item.fields[f.key], context)}</dd>`)}
-					</dl>` : ''}
-			`, $detail);
+		/* Save and Reset wake up when anything in the form differs from how it opened. Some boxes keep their value inside their own shadow DOM, so this checks on a short timer too. */
+		function checkDirty(){
+			const next = Boolean(form?.isDirty());
+			if(next === dirty) return;
+			dirty = next;
+			drawHeader();
+		}
+		if(canEdit){
+			$body.addEventListener('input', () => setTimeout(checkDirty));
+			$body.addEventListener('change', () => setTimeout(checkDirty));
+			setInterval(checkDirty, 400);
+			/* The browser's own "Leave site?" prompt while there are unsaved changes. */
+			window.addEventListener('beforeunload', event => {
+				if(!dirty) return;
+				event.preventDefault();
+				event.returnValue = '';
+			});
+			window.hasUnsavedInventoryWork = () => dirty;
 		}
 	</script>
 </content>

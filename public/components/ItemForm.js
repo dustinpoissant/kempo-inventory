@@ -31,7 +31,7 @@ const offerCategories = async $combobox => {
   if(!error) $combobox.setOptions(data.categories.map(c => c.name));
 };
 
-export const createItemForm = ({ item = null, fields = [], defaults = {}, askQuantity = true, context = { linked: {}, media: {} }, inDialog = false } = {}) => {
+export const createItemForm = ({ item = null, fields = [], defaults = {}, askQuantity = true, context = { linked: {}, media: {} }, inDialog = false, readOnly = false } = {}) => {
   const editing = Boolean(item);
   /* An item an extension owns keeps its SKU, name and category: the server refuses changes to them, so the boxes are not offered. */
   const locked = editing && Boolean(item.owner);
@@ -89,40 +89,42 @@ export const createItemForm = ({ item = null, fields = [], defaults = {}, askQua
       whenever the category's fields changed the order.
     */
     render(nothing, $box);
-    render(html`${shown.map(f => fieldTemplate(f, f.key in kept ? kept[f.key] : (item?.fields[f.key] ?? defaults.fields?.[f.key]), context))}`, $box);
+    render(html`${shown.map(f => fieldTemplate(f, f.key in kept ? kept[f.key] : (item?.fields[f.key] ?? defaults.fields?.[f.key]), { ...context, readOnly }))}`, $box);
   };
 
   render(html`
-    ${locked ? html`<p class="mb tc-muted">Managed by the ${item.owner} extension. Its SKU, name and category can only be changed there; everything else you can edit here, and quantity in the Quantity tab.</p>` : ''}
+    ${locked && !readOnly ? html`<p class="mb tc-muted">Managed by the ${item.owner} extension. Its SKU, name and category can only be changed there; everything else you can edit here, and quantity in the Quantity tab.</p>` : ''}
     <div class="d-f mb" style="gap: var(--spacer);">
       <div class="flex">
         <label class="d-b mb-sm" for="dlg-sku">SKU *</label>
         <div class="d-f" style="gap: var(--spacer_h);">
           <input type="text" id="dlg-sku" class="flex" style="width: auto; min-width: 0;" autocapitalize="off" autocomplete="off"
-            .value=${item?.sku ?? defaults.sku ?? ''} ?disabled=${locked} @keydown=${skuKeydown}>
-          <button type="button" class="btn" id="dlg-scan" ?disabled=${locked} @click=${scan}>Scan</button>
+            .value=${item?.sku ?? defaults.sku ?? ''} ?disabled=${locked && !readOnly} ?readonly=${readOnly} @keydown=${skuKeydown}>
+          ${readOnly ? '' : html`<button type="button" class="btn" id="dlg-scan" aria-label="Scan a barcode" title="Scan a barcode" ?disabled=${locked} @click=${scan}><k-icon src="/inventory/icons/barcode_scanner.svg"></k-icon></button>`}
         </div>
       </div>
     </div>
-    <div class="mb"><label class="d-b mb-sm" for="dlg-name">Name *</label><input type="text" id="dlg-name" class="full" ?disabled=${locked} .value=${item?.name ?? defaults.name ?? ''}></div>
+    <div class="mb"><label class="d-b mb-sm" for="dlg-name">Name *</label><input type="text" id="dlg-name" class="full" ?disabled=${locked && !readOnly} ?readonly=${readOnly} .value=${item?.name ?? defaults.name ?? ''}></div>
     <div class="mb">
       <label class="d-b mb-sm" for="dlg-category">Category</label>
-      <k-combobox id="dlg-category" class="full" debounce-ms="150" ?disabled=${locked} .value=${item?.category ?? defaults.category ?? ''}
+      ${readOnly ? html`<input type="text" id="dlg-category" class="full" readonly .value=${item?.category ?? ''}>` : html`<k-combobox id="dlg-category" class="full" debounce-ms="150" ?disabled=${locked} .value=${item?.category ?? defaults.category ?? ''}
         empty-message="No categories yet. Type to add one." no-results-message="New category"
         @focusin=${e => offerCategories(e.currentTarget)}
-        @search=${showFields} @select=${() => setTimeout(showFields)} @change=${() => setTimeout(showFields)} @focusout=${() => setTimeout(showFields, 150)}></k-combobox>
+        @search=${showFields} @select=${() => setTimeout(showFields)} @change=${() => setTimeout(showFields)} @focusout=${() => setTimeout(showFields, 150)}></k-combobox>`}
     </div>
     <div class="d-f mb" style="align-items: flex-end; gap: var(--spacer);">
       <div class="flex">
         <label class="d-b mb-sm" for="dlg-unit">Unit
           <small class="d-b tc-muted">What the quantity counts, such as oz or g. Leave empty to use the category's unit.</small>
         </label>
-        <input type="text" id="dlg-unit" class="full" maxlength="20" .value=${item?.unit ?? defaults.unit ?? ''}>
+        <input type="text" id="dlg-unit" class="full" maxlength="20" ?readonly=${readOnly} .value=${item?.unit ?? defaults.unit ?? ''}>
       </div>
       ${editing || !askQuantity ? '' : html`<div style="width: 9rem;"><label class="d-b mb-sm" for="dlg-qty">Starting quantity</label><input type="number" id="dlg-qty" class="full" min="0" step="1" .value=${String(defaults.quantity ?? 0)}></div>`}
     </div>
-    <div class="mb"><label class="d-b mb-sm" for="dlg-tags">Tags</label><k-tags id="dlg-tags" .value=${tagsValue(item?.tags ?? defaults.tags)} .getSuggestions=${suggestTags} @input=${lowerTagInput} @change=${lowerTagChips}></k-tags></div>
-    <div class="mb"><label class="d-b mb-sm" for="dlg-description">Description</label><textarea id="dlg-description" class="full" rows="2" .value=${item?.description ?? ''}></textarea></div>
+    <div class="mb"><label class="d-b mb-sm" for="dlg-tags">Tags</label>${readOnly
+      ? html`<input type="text" id="dlg-tags" class="full" readonly .value=${(item?.tags ?? []).join(', ')}>`
+      : html`<k-tags id="dlg-tags" .value=${tagsValue(item?.tags ?? defaults.tags)} .getSuggestions=${suggestTags} @input=${lowerTagInput} @change=${lowerTagChips}></k-tags>`}</div>
+    <div class="mb"><label class="d-b mb-sm" for="dlg-description">Description</label><textarea id="dlg-description" class="full" rows="2" ?readonly=${readOnly} .value=${item?.description ?? ''}></textarea></div>
     <div id="dlg-fields"></div>
   `, $root);
   showFields();

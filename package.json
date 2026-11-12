@@ -41,7 +41,7 @@
   },
   "peerDependencies": {
     "kempo": ">=4.11.0",
-    "kempo-ui": ">=1.0.0",
+    "kempo-ui": ">=1.5.0",
     "kempo-media": ">=0.3.0",
     "kempo-files": ">=0.1.3",
     "kempo-thumbs": ">=0.1.3"
