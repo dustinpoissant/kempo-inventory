@@ -2,6 +2,13 @@
 
 All notable changes to `kempo-inventory` are documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- The item page has no wrapper element, so its tabs sit directly in `<main>`, as the rest of a site's pages do.
+- The SDK sends its requests through kempo's shared request layer (`/kempo/fetch.js`), so a page and its components that ask for the same thing make one request. Requires kempo 4.13.0 or later.
+
 ## [0.6.0] - 2026-11-12
 
 Requires kempo-ui 1.5.0 or later (the read-only fields).

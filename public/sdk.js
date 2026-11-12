@@ -1,20 +1,6 @@
-const BASE = '/inventory/api';
+import { request as req } from '/kempo/fetch.js';
 
-const req = async (method, path, data) => {
-  const opts = { method, headers: {} };
-  if(data !== undefined && method !== 'GET'){
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(data);
-  }
-  try {
-    const res = await fetch(path, opts);
-    const json = await res.json().catch(() => ({}));
-    if(!res.ok) return [{ code: res.status, msg: json.error || 'An error occurred' }, null];
-    return [null, json];
-  } catch {
-    return [{ code: 503, msg: 'Network error' }, null];
-  }
-};
+const BASE = '/inventory/api';
 
 const buildQuery = params => {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '' && v !== false);

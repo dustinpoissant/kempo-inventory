@@ -4,20 +4,18 @@
 -->
 <page template="default" title="Item">
 <content>
-	<div id="app" class="container py" hidden>
-		<k-tabs active="details" hash-routing>
-			<k-tab for="details">Details</k-tab>
-			<k-tab-content name="details" class="pt">
-				<div id="itemHeader"></div>
-				<div id="itemBody"></div>
-			</k-tab-content>
-			<k-tab for="quantity">Quantity</k-tab>
-			<k-tab-content name="quantity" class="pt">
-				<k-inventory-item-quantity id="itemQuantity"></k-inventory-item-quantity>
-			</k-tab-content>
-			<location name="inventory-item-tabs" />
-		</k-tabs>
-	</div>
+	<k-tabs active="details" hash-routing>
+		<k-tab for="details">Details</k-tab>
+		<k-tab-content name="details" class="pt">
+			<div id="itemHeader"></div>
+			<div id="itemBody"></div>
+		</k-tab-content>
+		<k-tab for="quantity">Quantity</k-tab>
+		<k-tab-content name="quantity" class="pt">
+			<k-inventory-item-quantity id="itemQuantity"></k-inventory-item-quantity>
+		</k-tab-content>
+		<location name="inventory-item-tabs" />
+	</k-tabs>
 </content>
 <content location="scripts">
 	<script type="module" src="/kempo-ui/components/Tabs.js"></script>
@@ -36,7 +34,6 @@
 		  update items, the same form with every box read only for everyone else.
 		*/
 		const id = location.pathname.split('/').filter(Boolean).pop();
-		const $app = document.getElementById('app');
 		const $header = document.getElementById('itemHeader');
 		const $body = document.getElementById('itemBody');
 
@@ -57,12 +54,10 @@
 
 		const [fieldsError, fieldData] = await getFields();
 		if(fieldsError){
-			$app.innerHTML = '<p class="tc-danger">You need to sign in to view this item.</p>';
-			$app.hidden = false;
+			$body.innerHTML = '<p class="tc-danger">You need to sign in to view this item.</p>';
 			Toast.error(fieldsError.msg || 'Failed to load the inventory fields');
 		} else {
 			fields = fieldData.fields;
-			$app.hidden = false;
 			$body.style.maxWidth = '44rem';
 			await show();
 		}
