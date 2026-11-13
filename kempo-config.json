@@ -3,6 +3,21 @@
   "git": "https://github.com/dustinpoissant/kempo-inventory",
   "public-scope": "inventory",
   "schema": "./server/db/schema.js",
+  "hooks": {
+    "search:query": "./hooks/search.js"
+  },
+  "search_types": [
+    {
+      "name": "inventory-item",
+      "title": "Inventory items",
+      "description": "Items by name, SKU, description, category, tags and text fields. Each word of a search is matched on its own, so \"blue filament\" finds the item Blue in the category Filament. Needs the items:read permission, or the public_read setting."
+    },
+    {
+      "name": "inventory-category",
+      "title": "Inventory categories",
+      "description": "Categories by name, tags and description. Needs the items:read permission, or the public_read setting."
+    }
+  ],
   "suggestedPeers": [
     {
       "name": "kempo-media",

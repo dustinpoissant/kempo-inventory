@@ -4,6 +4,13 @@ All notable changes to `kempo-inventory` are documented in this file.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-13
+
+### Added
+
+- **`ids` on `GET /inventory/api/items`.** A JSON list of item ids fetches exactly those items (with `tag`, `limit` and the rest still applying), so a page can show the items a search found with their photos and fields.
+- **Search for kempo-search.** The inventory answers kempo-search's `search:query` hook for the types `inventory-item` and `inventory-category` (declared as `search_types`, so the Search results widget lists them), and for both at once. Each word of a search is matched on its own against an item's name, SKU, description, category, tags and text fields, and the words' scores are combined, so `blue filament` finds the item Blue in the category Filament, where `blue` alone also finds paints and `filament` alone finds every filament. Every word must match, the order does not matter, and a match in the name counts most. Reading is checked first (`items:read`, or the `public_read` setting), and a result never carries the quantity. Nothing changes without kempo-search installed.
+
 ### Changed
 
 - The item page has no wrapper element, so its tabs sit directly in `<main>`, as the rest of a site's pages do.

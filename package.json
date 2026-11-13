@@ -30,6 +30,7 @@
     "admin",
     "public",
     "public-items",
+    "hooks",
     "server",
     "install.js",
     "update.js",

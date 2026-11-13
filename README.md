@@ -124,6 +124,23 @@ Items and categories can be **tagged**: short labels such as `acrylic`, `red`, `
 - **Inheritance:** an item does not inherit its category's tags. Searching a category's tag finds the category, and the category is how you reach its items.
 - The admin lists show a Tags column. To reuse the control in your own forms, `ItemFields.js` exports `tagsValue(tags)`, `suggestTags` and `readTags($tags)` for use with `<k-tags .value=${tagsValue(tags)} .getSuggestions=${suggestTags}>`; `readTags` includes text typed but not yet added.
 
+## Search (kempo-search)
+
+With [kempo-search](https://github.com/dustinpoissant/kempo-search) installed, the inventory answers its searches. This extension needs nothing from it: it registers a handler on the `search:query` hook, which does nothing until kempo-search fires it. Two types:
+
+| Type | Finds | Result |
+|---|---|---|
+| `inventory-item` | items by name, SKU, description, category, tags and text fields (and the description and tags of the item's category) | `{ score, id, title, description (category · SKU), url (/items/<id>), sku, category }` |
+| `inventory-category` | categories by name, tags and description | `{ score, id, title, description (how many items), count, url }`, with `url` (the inventory admin) only for someone with `system:admin:access` |
+
+Ask for both at once with `types: ["inventory-item", "inventory-category"]`; each is answered in its own list.
+
+**Each word is matched on its own.** A search is cut into words, every word must match something, and each word takes the best match it has: a match in the name is worth more than one in the SKU (0.9), the category (0.8), the tags (0.6), the description (0.5) or a text field (0.4), and a name that is exactly the word beats one that merely has it as a word (`blue` finds *Blue* before *Admiral Blue*), which beats the start of a word, which beats the inside of one. The word scores are averaged into the item's score. So with a category *Filament* and items called *Blue* in Filament and in Paint, `blue filament` finds only the blue filament, `blue` finds both, and `filament` finds every filament. The order of the words does not matter.
+
+Who may search is the same as who may read (see below): the `items:read` permission, or anyone when `public_read` is on. It is checked before the database is read, and **a result never carries the quantity**.
+
+To offer the types in the Search results widget's list, they are declared as `search_types` in this extension's `kempo-config.json`.
+
 ## Who can read, and who can see quantity counts
 
 Reading the inventory needs the `items:read` permission. Turn on the `public_read` setting (off by default) and **anyone can read it, signed in or not**, so it can be shared as a catalogue. Public reading covers items, categories and fields (and photos, see below); writing always needs the matching permission.
@@ -420,7 +437,7 @@ All routes require a session holding the permission above.
 
 | Route | Purpose |
 |---|---|
-| `GET /inventory/api/items?q=&filters={"key":"value"}&owner=&limit=&offset=` | List and search; `owner` keeps one extension's items. Returns `{ items, total, linked, media }` |
+| `GET /inventory/api/items?q=&filters={"key":"value"}&owner=&ids=["id"]&limit=&offset=` | List and search; `owner` keeps one extension's items, `ids` (a JSON list) fetches exactly those items. Returns `{ items, total, linked, media }` |
 | `POST /inventory/api/items` | Create `{ sku, name, description?, quantity?, fields? }` |
 | `GET /inventory/api/items/[id]` | Item, recent movements and linked items |
 | `PATCH /inventory/api/items/[id]` | Update `{ sku?, name?, description?, fields? }` (not quantity) |
